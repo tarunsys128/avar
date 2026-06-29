@@ -6,14 +6,10 @@ module.exports = () => {
   let bundleIdentifier = 'com.avardairy.customer';
   let primaryColor = '#10B981'; // Green for customer
 
-  if (variant === 'staff') {
-    appName = 'Avar Staff';
-    bundleIdentifier = 'com.avardairy.staff';
-    primaryColor = '#F59E0B'; // Yellow for staff
-  } else if (variant === 'admin') {
-    appName = 'Avar Admin';
-    bundleIdentifier = 'com.avardairy.admin';
-    primaryColor = '#6366F1'; // Purple/Indigo for admin
+  if (variant === 'admin') {
+    appName = 'Avar Management';
+    bundleIdentifier = 'com.avardairy.management';
+    primaryColor = '#6366F1'; // Purple/Indigo for admin & staff app
   }
 
   return {

@@ -284,18 +284,18 @@ export const AppNavigator = () => {
   if (!currentUser) return <AuthStack />;
 
   // Smart Role-Based Navigation
-  // If user is Admin, show the UI corresponding to the current App Variant
-  if (userRole === 'admin') {
-    if (appVariant === 'admin') return <AdminRootStack />;
-    if (appVariant === 'staff') return <StaffRootStack />;
-    return <CustomerTabs />;
+  // The 'admin' variant app hosts both Admin and Staff UIs
+  if (appVariant === 'admin') {
+    if (userRole === 'admin') return <AdminRootStack />;
+    if (userRole === 'staff') return <StaffRootStack />;
+    return <AuthStack />; // fallback
   }
 
-  // Regular Role-Based Navigation
+  // Regular Customer Navigation (customer variant)
   return (
     <>
       <GlobalNotificationHandler />
-      {userRole === 'staff' ? <StaffRootStack /> : <CustomerTabs />}
+      <CustomerTabs />
     </>
   );
 };

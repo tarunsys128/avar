@@ -13,15 +13,7 @@
         "EXPO_PUBLIC_APP_VARIANT": "customer"
       }
     },
-    "preview-staff": {
-      "android": {
-        "buildType": "apk"
-      },
-      "env": {
-        "APP_VARIANT": "staff",
-        "EXPO_PUBLIC_APP_VARIANT": "staff"
-      }
-    },
+
     "preview-admin": {
       "android": {
         "buildType": "apk"

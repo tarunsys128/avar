@@ -68,12 +68,23 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    if (role !== appVariant && role !== 'admin') {
-      await supabase.auth.signOut();
-      setCurrentUser(null);
-      setUserRole(null);
-      Alert.alert('Access Denied', `This app is for ${appVariant}s. Your role is ${role}.`);
-      return;
+    if (appVariant === 'admin') {
+      if (role !== 'admin' && role !== 'staff') {
+        await supabase.auth.signOut();
+        setCurrentUser(null);
+        setUserRole(null);
+        Alert.alert('Access Denied', `This app is for Admins and Staff. Your role is ${role}.`);
+        return;
+      }
+    } else {
+      // Customer app
+      if (role !== 'customer' && role !== 'admin') {
+        await supabase.auth.signOut();
+        setCurrentUser(null);
+        setUserRole(null);
+        Alert.alert('Access Denied', `This app is for Customers. Your role is ${role}.`);
+        return;
+      }
     }
 
     if (data) {
@@ -155,9 +166,16 @@ export const AuthProvider = ({ children }) => {
       const role = profile ? profile.role : 'customer';
       const appVariant = Constants.expoConfig?.extra?.variant || 'customer';
 
-      if (role !== appVariant && role !== 'admin') {
-        await supabase.auth.signOut();
-        return { error: new Error(`Access Denied: This app is for ${appVariant}s. Your role is ${role}.`) };
+      if (appVariant === 'admin') {
+        if (role !== 'admin' && role !== 'staff') {
+          await supabase.auth.signOut();
+          return { error: new Error(`Access Denied: This app is for Admins and Staff. Your role is ${role}.`) };
+        }
+      } else {
+        if (role !== 'customer' && role !== 'admin') {
+          await supabase.auth.signOut();
+          return { error: new Error(`Access Denied: This app is for Customers. Your role is ${role}.`) };
+        }
       }
     }
     return { data, error: null };
