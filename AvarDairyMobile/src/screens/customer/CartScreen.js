@@ -1,209 +1,279 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import React from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../../context/CartContext';
-import { Minus, Plus, Trash2, MapPin, CheckCircle } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 
-const CartScreen = () => {
-  const { cart, updateBlocks, removeFromCart, getCartTotal, clearCart } = useCart();
-  const [step, setStep] = useState(1); // 1: Cart, 2: Address, 3: Confirm
-  const [selectedAddress, setSelectedAddress] = useState(null);
-  const [addresses, setAddresses] = useState([
-    { id: '1', text: '123 Dairy Lane, Milk City', isDefault: true },
-    { id: '2', text: '456 Farm Road, Cow Town', isDefault: false }
-  ]);
-  const [newAddress, setNewAddress] = useState('');
-  const navigation = useNavigation();
+const CARTON_KG = 5;
 
-  const handleAddAddress = () => {
-    if (!newAddress.trim()) return;
-    const newAddr = {
-      id: Date.now().toString(),
-      text: newAddress,
-      isDefault: addresses.length === 0
-    };
-    setAddresses([...addresses, newAddr]);
-    setSelectedAddress(newAddr.id);
-    setNewAddress('');
-  };
-
-  const handlePlaceOrder = () => {
-    clearCart();
-    setStep(3);
-  };
-
-  if (cart.length === 0 && step === 1) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Your cart is empty</Text>
-        <TouchableOpacity style={styles.btnPrimary} onPress={() => navigation.navigate('Home')}>
-          <Text style={styles.btnPrimaryText}>Browse Products</Text>
-        </TouchableOpacity>
+// ─── Stepper ───────────────────────────────────────────────────────────────────
+const Stepper = ({ item }) => {
+  const { updateQuantity, removeFromCart } = useCart();
+  return (
+    <View style={s.stepper}>
+      <TouchableOpacity
+        style={s.stepBtn}
+        onPress={() => item.qty === 1 ? removeFromCart(item.id) : updateQuantity(item.id, item.qty - 1)}
+      >
+        <Ionicons name="remove" size={16} color={COLORS.textDark} />
+      </TouchableOpacity>
+      <View style={s.stepMid}>
+        <Text style={s.stepCount}>{item.qty}</Text>
+        <Text style={s.stepUnit}>ctn</Text>
       </View>
+      <TouchableOpacity
+        style={[s.stepBtn, s.stepBtnPrimary]}
+        onPress={() => updateQuantity(item.id, item.qty + 1)}
+      >
+        <Ionicons name="add" size={16} color={COLORS.white} />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// ─── Cart Screen ───────────────────────────────────────────────────────────────
+const CartScreen = ({ navigation }) => {
+  const { cart, removeFromCart, getCartTotal, getCartKg, getCartCount, clearCart } = useCart();
+  const canGoBack = navigation.canGoBack();
+
+  const subtotal   = getCartTotal();
+  const totalKg    = getCartKg();
+  const totalCartons = getCartCount();
+
+  const handlePlaceOrder = () => navigation.navigate('AddressSelection');
+
+  if (cart.length === 0) {
+    return (
+      <SafeAreaView style={[s.safe, { justifyContent: 'center', alignItems: 'center' }]} edges={['top']}>
+        <View style={s.emptyWrap}>
+          <View style={s.emptyIconWrap}>
+            <Ionicons name="cart-outline" size={48} color={COLORS.textLight} />
+          </View>
+          <Text style={s.emptyTitle}>Your cart is empty</Text>
+          <Text style={s.emptySub}>Add paneer types from the home screen to build your wholesale order.</Text>
+          <TouchableOpacity style={s.shopBtn} onPress={() => navigation.navigate('HomeTab')}>
+            <Ionicons name="arrow-back" size={16} color={COLORS.white} style={{ marginRight: 6 }} />
+            <Text style={s.shopBtnTxt}>Back to Products</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
-      
-      {/* Progress Steps (simplified for React Native) */}
-      <View style={styles.progressRow}>
-        <Text style={[styles.stepText, step >= 1 && styles.stepTextActive]}>1. Cart</Text>
-        <Text style={styles.stepText}>→</Text>
-        <Text style={[styles.stepText, step >= 2 && styles.stepTextActive]}>2. Address</Text>
-        <Text style={styles.stepText}>→</Text>
-        <Text style={[styles.stepText, step >= 3 && styles.stepTextActive]}>3. Done</Text>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      {/* Header */}
+      <View style={s.header}>
+        {canGoBack ? (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+            <Ionicons name="arrow-back" size={22} color={COLORS.textDark} />
+          </TouchableOpacity>
+        ) : <View style={{ width: 38 }} />}
+        <Text style={s.headerTitle}>Review Order</Text>
+        <TouchableOpacity onPress={clearCart} style={s.clearBtn}>
+          <Text style={s.clearBtnTxt}>Clear</Text>
+        </TouchableOpacity>
       </View>
 
-      {step === 1 && (
-        <View>
-          {cart.map((item) => (
-            <View key={`${item.id}-${item.weight}`} style={styles.card}>
-              <View style={styles.itemRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemSub}>{item.weight} KG Block • ₹{item.price_per_kg}/kg</Text>
-                  <Text style={styles.itemPrice}>₹{item.total}</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end', gap: 12 }}>
-                  <TouchableOpacity onPress={() => removeFromCart(item.id, item.weight)}>
-                    <Trash2 color="#EF4444" size={20} />
-                  </TouchableOpacity>
-                  <View style={styles.counter}>
-                    <TouchableOpacity 
-                      style={styles.iconBtn}
-                      onPress={() => updateBlocks(item.id, item.weight, item.blocks - 1)}
-                    >
-                      <Minus color="#4B5563" size={16} />
-                    </TouchableOpacity>
-                    <Text style={styles.counterText}>{item.blocks}</Text>
-                    <TouchableOpacity 
-                      style={styles.iconBtn}
-                      onPress={() => updateBlocks(item.id, item.weight, item.blocks + 1)}
-                    >
-                      <Plus color="#4B5563" size={16} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-          ))}
-          
-          <View style={[styles.card, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE', borderWidth: 1 }]}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total Amount</Text>
-              <Text style={styles.totalPriceLarge}>₹{getCartTotal()}</Text>
-            </View>
-            <TouchableOpacity style={styles.btnPrimary} onPress={() => setStep(2)}>
-              <Text style={styles.btnPrimaryText}>Proceed to Address</Text>
-            </TouchableOpacity>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* Order summary chips */}
+        <View style={s.summaryStrip}>
+          <View style={s.summaryChip}>
+            <Ionicons name="layers-outline" size={14} color={COLORS.primary} />
+            <Text style={s.summaryChipTxt}>{totalCartons} carton{totalCartons !== 1 ? 's' : ''}</Text>
+          </View>
+          <View style={s.summaryDot} />
+          <View style={s.summaryChip}>
+            <Ionicons name="scale-outline" size={14} color={COLORS.primary} />
+            <Text style={s.summaryChipTxt}>{totalKg} kg total</Text>
+          </View>
+          <View style={s.summaryDot} />
+          <View style={s.summaryChip}>
+            <Ionicons name="cube-outline" size={14} color={COLORS.primary} />
+            <Text style={s.summaryChipTxt}>{cart.length} type{cart.length !== 1 ? 's' : ''}</Text>
           </View>
         </View>
-      )}
 
-      {step === 2 && (
-        <View>
-          <TouchableOpacity onPress={() => setStep(1)} style={{ marginBottom: 16 }}>
-            <Text style={{ color: '#4F46E5', fontWeight: 'bold' }}>← Back to Cart</Text>
-          </TouchableOpacity>
-          
-          <Text style={styles.sectionTitle}>Select Delivery Address</Text>
-          
-          {addresses.map((addr) => (
-            <TouchableOpacity 
-              key={addr.id} 
-              style={[styles.card, selectedAddress === addr.id && styles.cardActive]}
-              onPress={() => setSelectedAddress(addr.id)}
-            >
-              <View style={styles.itemRow}>
-                <MapPin color={selectedAddress === addr.id ? '#4F46E5' : '#9CA3AF'} size={20} />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={styles.addressText}>{addr.text}</Text>
-                  {addr.isDefault && <Text style={styles.defaultBadge}>Default</Text>}
+        {/* Cart Items */}
+        <Text style={s.sectionLabel}>ITEMS IN ORDER</Text>
+        {cart.map(item => {
+          const itemKg = item.qty * CARTON_KG;
+          const itemTotal = item.price_per_kg * CARTON_KG * item.qty;
+          return (
+            <View key={item.id} style={s.cartCard}>
+              <View style={s.itemIconWrap}>
+                <Ionicons name="cube" size={24} color={COLORS.primary} />
+              </View>
+              <View style={s.itemInfo}>
+                <Text style={s.itemName}>{item.name}</Text>
+                <Text style={s.itemSub}>₹{item.price_per_kg}/kg · {itemKg} kg</Text>
+                <View style={s.itemFooter}>
+                  <Text style={s.itemTotal}>₹{itemTotal.toFixed(0)}</Text>
+                  <Stepper item={item} />
                 </View>
               </View>
-            </TouchableOpacity>
-          ))}
-
-          <View style={[styles.card, { borderStyle: 'dashed', borderWidth: 1, borderColor: '#D1D5DB' }]}>
-            <Text style={styles.label}>Add New Address</Text>
-            <View style={styles.row}>
-              <TextInput 
-                style={styles.input}
-                placeholder="Enter full address..."
-                value={newAddress}
-                onChangeText={setNewAddress}
-              />
-              <TouchableOpacity style={styles.btnAdd} onPress={handleAddAddress}>
-                <Text style={styles.btnAddText}>Add</Text>
+              <TouchableOpacity onPress={() => removeFromCart(item.id)} style={s.trashBtn}>
+                <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
               </TouchableOpacity>
             </View>
-          </View>
+          );
+        })}
 
-          <View style={[styles.card, { marginTop: 16 }]}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Payment Mode</Text>
-              <Text style={styles.totalPriceLarge}>COD</Text>
+        {/* Bill Details */}
+        <View style={s.billCard}>
+          <Text style={s.billTitle}>Order Summary</Text>
+
+          {cart.map(item => (
+            <View key={item.id} style={s.billRow}>
+              <Text style={s.billLabel}>{item.name} ({item.qty} × 5 kg)</Text>
+              <Text style={s.billValue}>₹{(item.price_per_kg * CARTON_KG * item.qty).toFixed(0)}</Text>
             </View>
-            <TouchableOpacity 
-              style={[styles.btnPrimary, !selectedAddress && { backgroundColor: '#9CA3AF' }]} 
-              onPress={handlePlaceOrder}
-              disabled={!selectedAddress}
-            >
-              <Text style={styles.btnPrimaryText}>Place Order (₹{getCartTotal()})</Text>
-            </TouchableOpacity>
+          ))}
+
+          <View style={s.billDivider} />
+
+          <View style={s.billRow}>
+            <Text style={s.billLabel}>Total Weight</Text>
+            <Text style={s.billValue}>{totalKg} kg</Text>
+          </View>
+
+          <View style={s.billDivider} />
+
+          <View style={s.totalRow}>
+            <View>
+              <Text style={s.totalLabel}>Grand Total</Text>
+              <Text style={s.totalSub}>Excl. delivery charges</Text>
+            </View>
+            <Text style={s.totalValue}>₹{subtotal.toFixed(0)}</Text>
           </View>
         </View>
-      )}
 
-      {step === 3 && (
-        <View style={styles.emptyContainer}>
-          <CheckCircle color="#10B981" size={64} style={{ marginBottom: 16 }} />
-          <Text style={styles.successTitle}>Order Placed!</Text>
-          <Text style={styles.successSub}>Your fresh paneer will be delivered soon.</Text>
-          <TouchableOpacity style={styles.btnSecondary} onPress={() => { setStep(1); navigation.navigate('Home'); }}>
-            <Text style={styles.btnSecondaryText}>Back to Home</Text>
-          </TouchableOpacity>
+        <View style={s.noteCard}>
+          <Ionicons name="information-circle-outline" size={16} color={COLORS.primary} />
+          <Text style={s.noteTxt}>Delivery charges will be calculated at checkout based on your location.</Text>
         </View>
-      )}
 
-    </ScrollView>
+        <View style={{ height: 120 }} />
+      </ScrollView>
+
+      {/* Place Order Footer */}
+      <View style={s.footerBar}>
+        <View style={s.footerInfo}>
+          <Text style={s.footerLabel}>{totalCartons} cartons · {totalKg} kg</Text>
+          <Text style={s.footerValue}>₹{subtotal.toFixed(0)}</Text>
+        </View>
+        <TouchableOpacity style={s.placeBtn} onPress={handlePlaceOrder}>
+          <Text style={s.placeBtnTxt}>Confirm Address</Text>
+          <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, minHeight: 400 },
-  emptyText: { fontSize: 18, color: '#6B7280', marginBottom: 20 },
-  progressRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20 },
-  stepText: { color: '#9CA3AF', fontWeight: '600' },
-  stepTextActive: { color: '#4F46E5', fontWeight: 'bold' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },
-  cardActive: { borderColor: '#4F46E5', borderWidth: 2, backgroundColor: '#EEF2FF' },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemName: { fontSize: 16, fontWeight: 'bold' },
-  itemSub: { fontSize: 12, color: '#6B7280', marginTop: 4 },
-  itemPrice: { fontSize: 16, fontWeight: 'bold', color: '#4F46E5', marginTop: 8 },
-  counter: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F9FAFB', padding: 4, borderRadius: 8 },
-  iconBtn: { backgroundColor: '#fff', padding: 4, borderRadius: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2 },
-  counterText: { fontWeight: 'bold' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  totalLabel: { fontSize: 14, color: '#6B7280' },
-  totalPriceLarge: { fontSize: 24, fontWeight: 'bold', color: '#111827' },
-  btnPrimary: { backgroundColor: '#4F46E5', padding: 14, borderRadius: 8, alignItems: 'center' },
-  btnPrimaryText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  btnSecondary: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB', padding: 14, borderRadius: 8, alignItems: 'center', width: '100%' },
-  btnSecondaryText: { color: '#374151', fontWeight: 'bold', fontSize: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  addressText: { fontSize: 14, fontWeight: '500' },
-  defaultBadge: { backgroundColor: '#E5E7EB', alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, fontSize: 10, marginTop: 4 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  row: { flexDirection: 'row', gap: 8 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 10, backgroundColor: '#fff' },
-  btnAdd: { backgroundColor: '#10B981', justifyContent: 'center', paddingHorizontal: 16, borderRadius: 8 },
-  btnAddText: { color: '#fff', fontWeight: 'bold' },
-  successTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
-  successSub: { fontSize: 14, color: '#6B7280', marginBottom: 24 }
+const s = StyleSheet.create({
+  safe:  { flex: 1, backgroundColor: COLORS.bgLight },
+  scroll: { padding: SPACING.lg, paddingBottom: 20 },
+
+  // Header
+  header: {
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md, backgroundColor: COLORS.white,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border, ...SHADOW.sm,
+  },
+  backBtn:     { width: 38, alignItems: 'flex-start' },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
+  clearBtn:    { width: 50, alignItems: 'flex-end' },
+  clearBtnTxt: { color: COLORS.danger, fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.semibold },
+
+  // Summary strip
+  summaryStrip: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.lg, gap: SPACING.sm,
+  },
+  summaryChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  summaryChipTxt: { fontSize: FONTS.sizes.sm, color: COLORS.primary, fontWeight: FONTS.weights.semibold },
+  summaryDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary + '50' },
+
+  sectionLabel: { fontSize: FONTS.sizes.xs, fontWeight: FONTS.weights.bold, color: COLORS.textGray, marginBottom: SPACING.md, letterSpacing: 0.5 },
+
+  // Cart Card
+  cartCard: {
+    flexDirection: 'row', backgroundColor: COLORS.white, borderRadius: RADIUS.xl,
+    padding: SPACING.md, marginBottom: SPACING.md, ...SHADOW.sm,
+    alignItems: 'flex-start', borderWidth: 1, borderColor: COLORS.border,
+  },
+  itemIconWrap: {
+    width: 52, height: 52, borderRadius: RADIUS.md,
+    backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  itemInfo:  { flex: 1 },
+  itemName:  { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
+  itemSub:   { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 2 },
+  itemFooter:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.sm },
+  itemTotal: { fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.extrabold, color: COLORS.textDark },
+  trashBtn:  { padding: SPACING.sm, marginLeft: SPACING.sm },
+
+  // Stepper
+  stepper:        { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  stepBtn:        { width: 32, height: 32, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bgLight },
+  stepBtnPrimary: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  stepMid:        { alignItems: 'center', minWidth: 30 },
+  stepCount:      { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
+  stepUnit:       { fontSize: 9, color: COLORS.textGray, marginTop: -2 },
+
+  // Bill
+  billCard:    { backgroundColor: COLORS.white, borderRadius: RADIUS.xl, padding: SPACING.lg, ...SHADOW.sm, marginTop: SPACING.md, borderWidth: 1, borderColor: COLORS.border },
+  billTitle:   { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark, marginBottom: SPACING.lg },
+  billRow:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  billLabel:   { fontSize: FONTS.sizes.sm, color: COLORS.textMed },
+  billValue:   { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.semibold, color: COLORS.textDark },
+  billDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: SPACING.sm },
+  totalRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  totalLabel:  { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
+  totalSub:    { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 2 },
+  totalValue:  { fontSize: FONTS.sizes.xl, fontWeight: FONTS.weights.extrabold, color: COLORS.primary },
+
+  noteCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm,
+    backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.lg,
+    padding: SPACING.md, marginTop: SPACING.md,
+    borderWidth: 1, borderColor: COLORS.primary + '30',
+  },
+  noteTxt: { flex: 1, fontSize: FONTS.sizes.xs, color: COLORS.primary, lineHeight: 18 },
+
+  // Footer
+  footerBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: COLORS.white, padding: SPACING.lg,
+    flexDirection: 'row', alignItems: 'center',
+    borderTopWidth: 1, borderTopColor: COLORS.border, ...SHADOW.lg,
+  },
+  footerInfo:  { flex: 1 },
+  footerLabel: { fontSize: FONTS.sizes.xs, color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5 },
+  footerValue: { fontSize: FONTS.sizes.xl, fontWeight: FONTS.weights.extrabold, color: COLORS.textDark, marginTop: 2 },
+  placeBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+    backgroundColor: COLORS.primary, borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.xl, paddingVertical: 14,
+    ...SHADOW.md, shadowColor: COLORS.primary,
+  },
+  placeBtnTxt: { color: COLORS.white, fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold },
+
+  // Empty
+  emptyWrap:    { alignItems: 'center', paddingHorizontal: SPACING.xxxl },
+  emptyIconWrap:{ width: 100, height: 100, borderRadius: 50, backgroundColor: COLORS.bgLight, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.xl },
+  emptyTitle:   { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
+  emptySub:     { fontSize: FONTS.sizes.sm, color: COLORS.textGray, textAlign: 'center', marginTop: SPACING.sm, lineHeight: 20 },
+  shopBtn:      { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: SPACING.xl, paddingVertical: 14, borderRadius: RADIUS.xl, marginTop: SPACING.xl, ...SHADOW.sm },
+  shopBtnTxt:   { color: COLORS.white, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.base },
 });
 
 export default CartScreen;

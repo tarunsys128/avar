@@ -1,66 +1,50 @@
 import React, { createContext, useContext, useState } from 'react';
 
 const CartContext = createContext();
+const CARTON_KG = 5; // 1 carton = 5 kg
 
 export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
-  const addToCart = (product, weight, blocks) => {
-    setCart((prev) => {
-      const existingItemIndex = prev.findIndex(
-        (item) => item.id === product.id && item.weight === weight
-      );
-
-      if (existingItemIndex >= 0) {
-        const newCart = [...prev];
-        newCart[existingItemIndex].blocks += blocks;
-        newCart[existingItemIndex].total = 
-          newCart[existingItemIndex].price_per_kg * newCart[existingItemIndex].weight * newCart[existingItemIndex].blocks;
-        return newCart;
-      } else {
-        const total = product.price_per_kg * weight * blocks;
-        return [...prev, { ...product, weight, blocks, total }];
+  // Add a product (qty = 1 carton by default)
+  const addToCart = (product, cartons = 1) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === product.id);
+      if (existing) {
+        return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + cartons } : i);
       }
+      return [...prev, { ...product, qty: cartons }];
     });
   };
 
-  const removeFromCart = (id, weight) => {
-    setCart((prev) => prev.filter((item) => !(item.id === id && item.weight === weight)));
+  // Set exact carton quantity
+  const updateQuantity = (id, qty) => {
+    if (qty <= 0) { removeFromCart(id); return; }
+    setCart(prev => prev.map(i => i.id === id ? { ...i, qty } : i));
   };
 
-  const updateBlocks = (id, weight, newBlocks) => {
-    if (newBlocks <= 0) {
-      removeFromCart(id, weight);
-      return;
-    }
-    setCart((prev) =>
-      prev.map((item) => {
-        if (item.id === id && item.weight === weight) {
-          return {
-            ...item,
-            blocks: newBlocks,
-            total: item.price_per_kg * item.weight * newBlocks
-          };
-        }
-        return item;
-      })
-    );
-  };
+  const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
 
   const clearCart = () => setCart([]);
 
-  const getCartTotal = () => cart.reduce((sum, item) => sum + item.total, 0);
+  // Total = sum of (price_per_kg × CARTON_KG × cartons)
+  const getCartTotal = () =>
+    cart.reduce((sum, i) => sum + (i.price_per_kg * CARTON_KG * i.qty), 0);
 
-  const value = {
-    cart,
-    addToCart,
-    removeFromCart,
-    updateBlocks,
-    clearCart,
-    getCartTotal
-  };
+  // Total cartons in cart
+  const getCartCount = () => cart.reduce((sum, i) => sum + i.qty, 0);
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  // Total kg in cart
+  const getCartKg = () => cart.reduce((sum, i) => sum + (i.qty * CARTON_KG), 0);
+
+  return (
+    <CartContext.Provider value={{
+      cart, addToCart, updateQuantity, removeFromCart, clearCart,
+      getCartTotal, getCartCount, getCartKg, CARTON_KG,
+    }}>
+      {children}
+    </CartContext.Provider>
+  );
 };
