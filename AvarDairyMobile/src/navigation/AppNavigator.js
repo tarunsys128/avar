@@ -275,12 +275,11 @@ export const AppNavigator = () => {
   const appVariant = Constants.expoConfig?.extra?.variant || 'customer';
   const [introFinished, setIntroFinished] = useState(false);
 
-  // Show intro video on very first render (before auth loads too)
-  if (!introFinished) {
-    return <SplashVideoScreen onFinish={() => setIntroFinished(true)} />;
+  // Show intro video immediately, and hold it if app is still loading config/auth
+  if (!introFinished || loading) {
+    return <SplashVideoScreen onFinish={() => setIntroFinished(true)} isAuthLoading={loading} />;
   }
 
-  if (loading) return null;
   if (!currentUser) return <AuthStack />;
 
   // Smart Role-Based Navigation

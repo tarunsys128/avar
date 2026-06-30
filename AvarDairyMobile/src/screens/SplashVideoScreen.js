@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, StyleSheet, Animated, StatusBar, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, StatusBar, Dimensions, ActivityIndicator } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -8,46 +8,47 @@ const { width, height } = Dimensions.get('screen');
 // Prevent the native splash screen from auto-hiding — we control it here
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const SplashVideoScreen = ({ onFinish }) => {
+const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
   const videoRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(1)).current; // start fully visible
-  const [ready, setReady] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoFinishedOnce, setVideoFinishedOnce] = useState(false);
 
   // Hide native splash once our screen is mounted and video is loaded
   const handleLoad = async () => {
     await SplashScreen.hideAsync().catch(() => {});
-    setReady(true);
+    setVideoReady(true);
   };
 
-  // Fade out and call onFinish
-  const finishIntro = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 600,
-      useNativeDriver: true,
-    }).start(() => {
-      onFinish?.();
-    });
-  };
+  // We are ready to transition IF the video has finished playing at least once AND we aren't loading auth
+  useEffect(() => {
+    if (videoFinishedOnce && !isAuthLoading) {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }).start(() => {
+        onFinish?.();
+      });
+    }
+  }, [videoFinishedOnce, isAuthLoading]);
 
-  // Hard cap: always stop and exit after 5 seconds
+  // Fallback: If 5 seconds have passed, consider it "finished once"
   useEffect(() => {
     const timer = setTimeout(() => {
-      finishIntro();
+      setVideoFinishedOnce(true);
     }, 5000);
     return () => clearTimeout(timer);
   }, []);
 
   const handlePlaybackStatusUpdate = (status) => {
-    // Also cut off at 5s via position check (belt & suspenders)
-    if (status.didJustFinish || (status.positionMillis >= 5000 && status.isPlaying)) {
-      finishIntro();
+    if (status.didJustFinish || (status.positionMillis >= 4900 && status.isPlaying)) {
+      setVideoFinishedOnce(true);
     }
   };
 
   const handleError = () => {
-    // If video fails, skip immediately
-    finishIntro();
+    setVideoFinishedOnce(true);
   };
 
   return (
@@ -60,13 +61,20 @@ const SplashVideoScreen = ({ onFinish }) => {
         resizeMode={ResizeMode.COVER}
         shouldPlay
         isMuted={false}
-        isLooping={false}
+        isLooping={true} // Loop continuously if auth takes a long time (network issue)
         onLoad={handleLoad}
         onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
         onError={handleError}
       />
       {/* Subtle dark vignette at edges for polish */}
       <View style={s.vignette} pointerEvents="none" />
+      
+      {/* Professional subtle loading spinner ONLY if video finished but auth is STILL loading (network issue) */}
+      {videoFinishedOnce && isAuthLoading && (
+        <View style={s.loadingOverlay}>
+          <ActivityIndicator size="large" color="#10B981" />
+        </View>
+      )}
     </Animated.View>
   );
 };
@@ -83,10 +91,16 @@ const s = StyleSheet.create({
   },
   vignette: {
     ...StyleSheet.absoluteFillObject,
-    // Subtle dark edge overlay using border radius trick isn't ideal in RN,
-    // so we use a semi-transparent overlay on edges only
     backgroundColor: 'transparent',
     shadowColor: '#000',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    bottom: 60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
