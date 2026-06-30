@@ -33,9 +33,10 @@ const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
     }
   }, [videoFinishedOnce, isAuthLoading]);
 
-  // Fallback: If 5 seconds have passed, consider it "finished once"
+  // Fallback: If 5 seconds have passed, consider it "finished once" and force hide native splash
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
+      await SplashScreen.hideAsync().catch(() => {});
       setVideoFinishedOnce(true);
     }, 5000);
     return () => clearTimeout(timer);
@@ -47,7 +48,8 @@ const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
     }
   };
 
-  const handleError = () => {
+  const handleError = async () => {
+    await SplashScreen.hideAsync().catch(() => {});
     setVideoFinishedOnce(true);
   };
 
