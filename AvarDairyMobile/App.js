@@ -22,7 +22,9 @@ Notifications.setNotificationHandler({
 
 export default function App() {
   useEffect(() => {
-    requestAllPermissions();
+    // Only check for updates on mount; requesting all permissions aggressively at launch
+    // freezes or crashes some Android devices (especially custom ROMs) and blocks UI thread.
+    // Permissions should be requested contextually when needed in the app instead.
     checkForUpdates();
   }, []);
 
