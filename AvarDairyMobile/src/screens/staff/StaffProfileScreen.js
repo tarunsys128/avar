@@ -6,6 +6,7 @@ import { supabase } from '../../supabase';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 import { useIsFocused } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 
 const StaffProfileScreen = ({ navigation }) => {
   const { currentUser, logout } = useAuth();
@@ -86,15 +87,15 @@ const StaffProfileScreen = ({ navigation }) => {
           {currentUser?.avatar_url ? (
             <Image source={{ uri: currentUser.avatar_url }} style={s.avatarImg} />
           ) : (
-            <View style={s.avatarPh}>
-              <Text style={s.avatarEmoji}>🛵</Text>
+            <View style={s.avatar}>
+              <Ionicons name="bicycle-outline" size={32} color="#047857" />
             </View>
           )}
           <View style={s.profileInfo}>
             <Text style={s.name}>{name}</Text>
             <Text style={s.phone}>{phone}</Text>
             <View style={s.ratingBox}>
-              <Text style={s.star}>⭐</Text>
+              <Ionicons name="star" size={12} color={COLORS.textDark} style={{ marginRight: 4 }} />
               <Text style={s.ratingTxt}>Avar Verified Partner</Text>
             </View>
           </View>
@@ -130,9 +131,9 @@ const StaffProfileScreen = ({ navigation }) => {
         {/* Settings Links */}
         <Text style={s.sectionTitle}>Account & Settings</Text>
         <View style={s.menuGroup}>
-          <MenuRow icon="⏰" title="Task Reminders" onPress={() => navigation.navigate('Reminders')} />
-          <MenuRow icon="🔒" title="Change Password" onPress={() => navigation.navigate('GenericSettings', { title: 'Change Password' })} />
-          <MenuRow icon="🎧" title="Support Helpdesk" onPress={() => navigation.navigate('GenericSettings', { title: 'Support Helpdesk' })} />
+          <MenuRow icon="time-outline" title="Task Reminders" onPress={() => navigation.navigate('Reminders')} />
+          <MenuRow icon="lock-closed-outline" title="Change Password" onPress={() => navigation.navigate('GenericSettings', { title: 'Change Password' })} />
+          <MenuRow icon="headset-outline" title="Support Helpdesk" onPress={() => navigation.navigate('GenericSettings', { title: 'Support Helpdesk' })} />
         </View>
 
         {/* Logout Button */}
@@ -145,11 +146,11 @@ const StaffProfileScreen = ({ navigation }) => {
   );
 };
 
-const MenuRow = ({ icon, title, onPress }) => (
+const MenuRow = ({ icon, title, onPress, value }) => (
   <TouchableOpacity style={s.menuRow} onPress={onPress}>
-    <View style={s.menuIconBox}><Text>{icon}</Text></View>
+    <View style={s.menuIconBox}><Ionicons name={icon} size={20} color={COLORS.textDark} /></View>
     <Text style={s.menuTitle}>{title}</Text>
-    <Text style={s.chevron}>›</Text>
+    {value ? <Text style={s.menuValue}>{value}</Text> : <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />}
   </TouchableOpacity>
 );
 
@@ -167,16 +168,14 @@ const s = StyleSheet.create({
   avatarImg: {
     width: 64, height: 64, borderRadius: 32, marginRight: SPACING.md, backgroundColor: COLORS.border
   },
-  avatarPh: {
-    width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.greenLight,
+  avatar: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: '#D1FAE5',
     justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md
   },
-  avatarEmoji: { fontSize: 32 },
   profileInfo: { flex: 1 },
   name:  { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
   phone: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 2 },
   ratingBox: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-  star: { fontSize: 12, marginRight: 4 },
   ratingTxt: { fontSize: FONTS.sizes.xs, color: COLORS.textDark, fontWeight: FONTS.weights.medium },
 
   toggleCard: {
@@ -203,7 +202,7 @@ const s = StyleSheet.create({
   },
   menuIconBox: { width: 32, height: 32, borderRadius: 8, backgroundColor: COLORS.bgLight, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md },
   menuTitle: { flex: 1, fontSize: FONTS.sizes.base, color: COLORS.textDark, fontWeight: FONTS.weights.medium },
-  chevron: { fontSize: 24, color: COLORS.textLight, marginTop: -4 },
+  menuValue: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, fontWeight: FONTS.weights.bold },
 
   logoutBtn: {
     backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',

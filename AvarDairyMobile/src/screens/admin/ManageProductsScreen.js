@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../supabase';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'react-native';
 
 const ManageProductsScreen = ({ navigation }) => {
   const [products, setProducts] = useState([]);
@@ -78,7 +80,7 @@ const ManageProductsScreen = ({ navigation }) => {
         <Text style={s.hint}>Tap status badge to change availability. Hold a card to delete.</Text>
         {products.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>🧀</Text>
+            <Ionicons name="cube-outline" size={48} color={COLORS.textGray} style={{marginBottom: 12}} />
             <Text style={s.emptyTxt}>No products yet. Add your first product!</Text>
           </View>
         )}
@@ -90,11 +92,20 @@ const ManageProductsScreen = ({ navigation }) => {
             onLongPress={() => handleDeleteProduct(product)}
             activeOpacity={0.7}
           >
-            <View style={s.productIconBox}><Text style={{ fontSize: 32 }}>{product.emoji || '🧀'}</Text></View>
+            <View style={s.productIconBox}>
+              {product.image_url ? (
+                <Image source={{uri: product.image_url}} style={{width: 60, height: 60, borderRadius: RADIUS.md}} />
+              ) : (
+                <Ionicons name={product.emoji || 'cube-outline'} size={32} color={COLORS.primary} />
+              )}
+            </View>
             <View style={s.productInfo}>
               <Text style={s.productName}>{product.name}</Text>
-              <Text style={s.productCategory}>{product.category}</Text>
-              <Text style={s.productPrice}>₹{product.price_per_kg}/kg</Text>
+              <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 2}}>
+                <Text style={s.productCategory}>{product.category}</Text>
+                {product.is_wholesale && <View style={s.wholesaleBadge}><Text style={s.wholesaleBadgeTxt}>B2B</Text></View>}
+              </View>
+              <Text style={s.productPrice}>₹{product.price_per_kg}/{product.unit_type || 'kg'}</Text>
             </View>
             <View style={s.stockBox}>
               <Text style={s.stockLabel}>Stock</Text>
@@ -137,7 +148,6 @@ const s = StyleSheet.create({
   scroll: { padding: SPACING.lg, paddingBottom: 100 },
 
   empty: { alignItems: 'center', marginTop: 60 },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
   emptyTxt: { color: COLORS.textGray, fontSize: FONTS.sizes.base, textAlign: 'center' },
 
   productCard: {
@@ -151,6 +161,8 @@ const s = StyleSheet.create({
   productInfo: { flex: 1 },
   productName: { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
   productCategory: { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 2 },
+  wholesaleBadge: { backgroundColor: '#F3E8FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 6 },
+  wholesaleBadgeTxt: { color: '#9333EA', fontSize: 9, fontWeight: 'bold' },
   productPrice: { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold, color: COLORS.green, marginTop: 4 },
 
   stockBox: { alignItems: 'flex-end', justifyContent: 'center' },

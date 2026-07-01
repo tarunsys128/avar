@@ -4,12 +4,17 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator,
   SafeAreaView, ScrollView, Alert, Image
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../supabase';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 
-const MASTER_ACCOUNTS = []; // Removed to avoid linting errors if accidentally referenced
+const appVariant = Constants.expoConfig?.extra?.variant || 'customer';
 
 const LoginScreen = () => {
+  // For the management app, we show a role picker first
+  const [selectedRole, setSelectedRole] = useState(appVariant === 'admin' ? null : 'customer'); // null = show picker
   const [isLogin, setIsLogin]     = useState(true);
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
@@ -18,9 +23,8 @@ const LoginScreen = () => {
   const [showPwd, setShowPwd]     = useState(false);
   const [loading, setLoading]     = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [showMaster, setShowMaster] = useState(false);
 
-  const { loginWithEmail, signupWithEmail, mockLogin } = useAuth();
+  const { loginWithEmail, signupWithEmail, resetPassword } = useAuth();
 
   const handleAuth = async () => {
     setErrorMessage('');
@@ -34,10 +38,34 @@ const LoginScreen = () => {
         const { error } = await loginWithEmail(email, password);
         if (error) throw error;
       } else {
+        // Staff signup flow
         if (!name) { setErrorMessage('Please enter your name.'); setLoading(false); return; }
-        const { error } = await signupWithEmail(email, password, name, phone);
+        
+        // 1. Create auth account
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        Alert.alert('Welcome!', 'Account created successfully.');
+        
+        if (data.user) {
+          // 2. Create profile with role = 'staff' and is_approved = false
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: data.user.id,
+            email: email,
+            name: name,
+            phone: phone || '',
+            role: 'staff',
+            is_approved: false,
+            is_available: false,
+          });
+          if (profileError) throw profileError;
+        }
+        
+        Alert.alert(
+          'Account Created!', 
+          'Your staff account has been created. Please wait for the Admin to approve your account before you can login.',
+          [{ text: 'OK', onPress: () => { setIsLogin(true); setEmail(''); setPassword(''); setName(''); setPhone(''); } }]
+        );
+        setLoading(false);
+        return;
       }
     } catch (e) {
       setErrorMessage(e.message || 'Authentication failed.');
@@ -45,6 +73,81 @@ const LoginScreen = () => {
       setLoading(false);
     }
   };
+
+  const handleResetPassword = async () => {
+    setErrorMessage('');
+    if (!email) {
+      setErrorMessage('Please enter your email address to reset password.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await resetPassword(email);
+      if (error) throw error;
+      Alert.alert('Reset Email Sent', `A password reset link has been sent to ${email}. Check your inbox.`);
+    } catch (e) {
+      setErrorMessage(e.message || 'Failed to send reset password email.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Management App: Role Selector Screen ────────────────────────────
+  if (appVariant === 'admin' && selectedRole === null) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={s.rolePickerContainer}>
+          <Image 
+            source={require('../../../assets/images/icon.png')} 
+            style={s.rolePickerLogo} 
+            resizeMode="contain"
+          />
+          <Text style={s.rolePickerTitle}>Avar Management</Text>
+          <Text style={s.rolePickerSub}>Select your role to continue</Text>
+
+          <TouchableOpacity 
+            style={s.roleCard} 
+            onPress={() => { setSelectedRole('admin'); setIsLogin(true); }}
+            activeOpacity={0.7}
+          >
+            <View style={[s.roleIconBox, { backgroundColor: '#EDE9FE' }]}>
+              <Ionicons name="shield-checkmark" size={32} color="#7C3AED" />
+            </View>
+            <View style={s.roleCardInfo}>
+              <Text style={s.roleCardTitle}>Login as Admin</Text>
+              <Text style={s.roleCardDesc}>Full access to all management tools, staff control, analytics & notifications.</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={COLORS.textGray} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={s.roleCard} 
+            onPress={() => { setSelectedRole('staff'); setIsLogin(true); }}
+            activeOpacity={0.7}
+          >
+            <View style={[s.roleIconBox, { backgroundColor: '#D1FAE5' }]}>
+              <Ionicons name="bicycle" size={32} color="#059669" />
+            </View>
+            <View style={s.roleCardInfo}>
+              <Text style={s.roleCardTitle}>Login as Staff</Text>
+              <Text style={s.roleCardDesc}>Delivery tasks, order management & your work dashboard.</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={COLORS.textGray} />
+          </TouchableOpacity>
+
+          <View style={s.roleFooter}>
+            <Ionicons name="information-circle-outline" size={16} color={COLORS.textGray} />
+            <Text style={s.roleFooterTxt}>Staff members can also create a new account from the next screen.</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Auth Form (Login / Signup) ──────────────────────────────────────
+  const isAdminApp = appVariant === 'admin';
+  const isStaffRole = selectedRole === 'staff';
+  const showSignupTab = isAdminApp ? isStaffRole : true; // Only staff can sign up in management app
 
   return (
     <SafeAreaView style={s.safe}>
@@ -57,6 +160,14 @@ const LoginScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Back button for management app */}
+          {isAdminApp && (
+            <TouchableOpacity style={s.backToRoles} onPress={() => { setSelectedRole(null); setErrorMessage(''); }}>
+              <Ionicons name="arrow-back" size={22} color={COLORS.textDark} />
+              <Text style={s.backToRolesTxt}>Change Role</Text>
+            </TouchableOpacity>
+          )}
+
           {/* ─── Brand ─────────────── */}
           <View style={s.brand}>
             <Image 
@@ -64,37 +175,58 @@ const LoginScreen = () => {
               style={s.logoImage} 
               resizeMode="contain"
             />
+            {isAdminApp && (
+              <View style={s.roleBadge}>
+                <Ionicons 
+                  name={isStaffRole ? 'bicycle' : 'shield-checkmark'} 
+                  size={14} 
+                  color={isStaffRole ? '#059669' : '#7C3AED'} 
+                />
+                <Text style={[s.roleBadgeTxt, { color: isStaffRole ? '#059669' : '#7C3AED' }]}>
+                  {isStaffRole ? 'Staff Login' : 'Admin Login'}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* ─── Card ──────────────── */}
           <View style={s.card}>
             {/* Tab switcher */}
-            <View style={s.tabs}>
-              <TouchableOpacity
-                style={[s.tab, isLogin && s.tabActive]}
-                onPress={() => setIsLogin(true)}
-              >
-                <Text style={[s.tabTxt, isLogin && s.tabTxtActive]}>Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.tab, !isLogin && s.tabActive]}
-                onPress={() => setIsLogin(false)}
-              >
-                <Text style={[s.tabTxt, !isLogin && s.tabTxtActive]}>Sign Up</Text>
-              </TouchableOpacity>
-            </View>
+            {showSignupTab ? (
+              <View style={s.tabs}>
+                <TouchableOpacity
+                  style={[s.tab, isLogin && s.tabActive]}
+                  onPress={() => setIsLogin(true)}
+                >
+                  <Text style={[s.tabTxt, isLogin && s.tabTxtActive]}>Login</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.tab, !isLogin && s.tabActive]}
+                  onPress={() => setIsLogin(false)}
+                >
+                  <Text style={[s.tabTxt, !isLogin && s.tabTxtActive]}>
+                    {isAdminApp ? 'Staff Sign Up' : 'Sign Up'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={s.adminOnlyHeader}>
+                <Ionicons name="shield-checkmark" size={20} color="#7C3AED" />
+                <Text style={s.adminOnlyTxt}>Admin Login Only</Text>
+              </View>
+            )}
 
             {/* Name & Phone (sign-up only) */}
             {!isLogin && (
               <>
                 <InputField
-                  icon="👤"
+                  iconName="person-outline"
                   placeholder="Full Name"
                   value={name}
                   onChangeText={setName}
                 />
                 <InputField
-                  icon="📱"
+                  iconName="call-outline"
                   placeholder="Phone Number"
                   value={phone}
                   onChangeText={setPhone}
@@ -104,7 +236,7 @@ const LoginScreen = () => {
             )}
 
             <InputField
-              icon="📧"
+              iconName="mail-outline"
               placeholder="Email Address"
               value={email}
               onChangeText={setEmail}
@@ -112,20 +244,23 @@ const LoginScreen = () => {
               keyboardType="email-address"
             />
             <InputField
-              icon="🔒"
+              iconName="lock-closed-outline"
               placeholder="Password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPwd}
               rightAction={
                 <TouchableOpacity onPress={() => setShowPwd(p => !p)} style={s.eyeBtn}>
-                  <Text style={s.eyeEmoji}>{showPwd ? '🙈' : '👁'}</Text>
+                  <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textGray} />
                 </TouchableOpacity>
               }
             />
 
             {isLogin && (
-              <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: SPACING.sm }}>
+              <TouchableOpacity 
+                style={{ alignSelf: 'flex-end', marginBottom: SPACING.sm }} 
+                onPress={handleResetPassword}
+              >
                 <Text style={s.forgotTxt}>Forgot Password?</Text>
               </TouchableOpacity>
             )}
@@ -134,10 +269,18 @@ const LoginScreen = () => {
               <Text style={s.errorTxt}>{errorMessage}</Text>
             ) : null}
 
+            {/* Info banner for staff signup */}
+            {!isLogin && isAdminApp && (
+              <View style={s.infoBanner}>
+                <Ionicons name="time-outline" size={18} color="#B45309" />
+                <Text style={s.infoBannerTxt}>After signup, your account needs Admin approval before you can login.</Text>
+              </View>
+            )}
+
             <TouchableOpacity style={s.primaryBtn} onPress={handleAuth} disabled={loading}>
               {loading
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={s.primaryBtnTxt}>{isLogin ? 'Sign In' : 'Create Account'}</Text>
+                : <Text style={s.primaryBtnTxt}>{isLogin ? 'Sign In' : 'Create Staff Account'}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -148,9 +291,9 @@ const LoginScreen = () => {
   );
 };
 
-const InputField = ({ icon, rightAction, ...props }) => (
+const InputField = ({ iconName, rightAction, ...props }) => (
   <View style={s.inputWrap}>
-    <Text style={s.inputIcon}>{icon}</Text>
+    <Ionicons name={iconName} size={18} color={COLORS.textGray} style={{marginRight: SPACING.sm}} />
     <TextInput
       style={s.input}
       placeholderTextColor={COLORS.textGray}
@@ -164,11 +307,20 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bgLight },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: SPACING.xl, paddingBottom: 40 },
 
+  // Back to roles
+  backToRoles: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg },
+  backToRolesTxt: { fontSize: FONTS.sizes.sm, color: COLORS.textDark, fontWeight: FONTS.weights.semibold, marginLeft: 6 },
+
   // Brand
-  brand: { alignItems: 'center', marginBottom: 24, elevation: 0, shadowOpacity: 0 },
-  logoImage: { width: 120, height: 120, marginBottom: 0, borderRadius: 0, borderWidth: 0 },
-  title: { fontSize: 36, fontWeight: '900', color: COLORS.primary, letterSpacing: 1.5 },
-  subtitle: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 4, fontWeight: '500' },
+  brand: { alignItems: 'center', marginBottom: 24 },
+  logoImage: { width: 100, height: 100, borderRadius: 0 },
+  roleBadge: { 
+    flexDirection: 'row', alignItems: 'center', 
+    marginTop: 12, paddingHorizontal: 14, paddingVertical: 6, 
+    borderRadius: RADIUS.full, backgroundColor: COLORS.white, 
+    ...SHADOW.sm 
+  },
+  roleBadgeTxt: { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold, marginLeft: 6 },
 
   // Card
   card: {
@@ -189,6 +341,13 @@ const s = StyleSheet.create({
   tabTxt: { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.semibold, color: COLORS.textGray },
   tabTxtActive: { color: COLORS.white },
 
+  adminOnlyHeader: { 
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F5F3FF', borderRadius: RADIUS.md, 
+    padding: SPACING.md, marginBottom: SPACING.xl 
+  },
+  adminOnlyTxt: { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: '#7C3AED', marginLeft: 8 },
+
   // Inputs
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
@@ -198,13 +357,18 @@ const s = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     height: 52, marginBottom: SPACING.md,
   },
-  inputIcon: { fontSize: 18, marginRight: SPACING.sm },
   input: { flex: 1, fontSize: FONTS.sizes.base, color: COLORS.textDark },
   eyeBtn: { padding: 4 },
-  eyeEmoji: { fontSize: 18 },
 
   forgotTxt: { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.semibold, color: COLORS.primary },
   errorTxt: { fontSize: FONTS.sizes.sm, color: COLORS.danger, textAlign: 'center', marginBottom: SPACING.md, fontWeight: FONTS.weights.medium },
+
+  // Info banner
+  infoBanner: { 
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', 
+    padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md 
+  },
+  infoBannerTxt: { flex: 1, fontSize: FONTS.sizes.xs, color: '#92400E', marginLeft: 8, lineHeight: 18 },
 
   // Primary button
   primaryBtn: {
@@ -217,30 +381,41 @@ const s = StyleSheet.create({
   },
   primaryBtnTxt: { color: COLORS.white, fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold },
 
-  // Master
-  masterSection: { marginTop: 24 },
-  masterToggle: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.md, padding: SPACING.md,
-    ...SHADOW.sm,
+  // ─── Role Picker (Management App) ────────────────────────────────────
+  rolePickerContainer: { 
+    flex: 1, justifyContent: 'center', padding: SPACING.xl
   },
-  masterToggleTxt: { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.semibold, color: COLORS.textMed },
-  chevron: { color: COLORS.textGray, fontSize: 12 },
-  masterPanel: { marginTop: 10 },
-  masterHint: { textAlign: 'center', color: COLORS.textGray, fontSize: FONTS.sizes.xs, marginBottom: 8 },
-  masterCard: {
+  rolePickerLogo: { width: 90, height: 90, alignSelf: 'center', marginBottom: SPACING.lg },
+  rolePickerTitle: { 
+    fontSize: 28, fontWeight: '900', color: COLORS.textDark, 
+    textAlign: 'center', letterSpacing: 0.5 
+  },
+  rolePickerSub: { 
+    fontSize: FONTS.sizes.sm, color: COLORS.textGray, 
+    textAlign: 'center', marginTop: 6, marginBottom: SPACING.xxl 
+  },
+
+  roleCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.md, padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    borderLeftWidth: 4,
+    backgroundColor: COLORS.white, borderRadius: RADIUS.xl,
+    padding: SPACING.lg, marginBottom: SPACING.md,
+    borderWidth: 1.5, borderColor: COLORS.border,
     ...SHADOW.sm,
   },
-  masterEmoji: { fontSize: 24, marginRight: SPACING.md },
-  masterLabel: { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
-  masterRole: { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 2 },
-  masterArrow: { fontSize: 20, fontWeight: FONTS.weights.bold },
+  roleIconBox: {
+    width: 56, height: 56, borderRadius: 16,
+    justifyContent: 'center', alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  roleCardInfo: { flex: 1, marginRight: 8 },
+  roleCardTitle: { fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
+  roleCardDesc: { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 4, lineHeight: 17 },
+
+  roleFooter: { 
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    marginTop: SPACING.xl, paddingHorizontal: SPACING.lg 
+  },
+  roleFooterTxt: { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginLeft: 6, flex: 1 },
 });
 
 export default LoginScreen;

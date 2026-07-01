@@ -63,9 +63,13 @@ const PaneerCard = ({ item }) => {
   const { cart } = useCart();
   const cartItem = cart.find(c => c.id === item.id);
   const cartons = cartItem?.qty || 0;
-  const totalKg = cartons * CARTON_KG;
-  const iconName = PANEER_ICONS[item.name] || DEFAULT_ICON;
-  const cartonPrice = (item.price_per_kg * CARTON_KG).toFixed(0);
+  
+  const bulkQty = item.wholesale_qty || 5;
+  const totalKg = cartons * bulkQty;
+  const iconName = item.emoji || 'cube-outline';
+  
+  const cartonPrice = item.wholesale_price || (item.price_per_kg * bulkQty).toFixed(0);
+  const perKgPrice = item.retail_price || item.price_per_kg || 0;
 
   return (
     <View style={[styles.paneerCard, cartons > 0 && styles.paneerCardActive]}>
@@ -74,7 +78,11 @@ const PaneerCard = ({ item }) => {
 
       {/* Icon area */}
       <View style={[styles.iconWrap, cartons > 0 && styles.iconWrapActive]}>
-        <Ionicons name={iconName} size={32} color={cartons > 0 ? COLORS.white : COLORS.primary} />
+        {item.image_url ? (
+           <Image source={{uri: item.image_url}} style={styles.cardImage} />
+        ) : (
+           <Ionicons name={iconName} size={32} color={cartons > 0 ? COLORS.white : COLORS.primary} />
+        )}
       </View>
 
       {/* Info */}
@@ -86,8 +94,8 @@ const PaneerCard = ({ item }) => {
       {/* Pricing */}
       <View style={styles.priceRow}>
         <View>
-          <Text style={styles.pricePerKg}>₹{item.price_per_kg}<Text style={styles.priceUnit}>/kg</Text></Text>
-          <Text style={styles.priceCarton}>₹{cartonPrice} per carton (5 kg)</Text>
+          <Text style={styles.pricePerKg}>₹{perKgPrice}<Text style={styles.priceUnit}>/{item.unit_type || 'kg'}</Text></Text>
+          <Text style={styles.priceCarton}>₹{cartonPrice} per carton ({bulkQty} {item.unit_type || 'kg'})</Text>
         </View>
         {item.low_stock && (
           <View style={styles.lowStockBadge}>
@@ -253,7 +261,7 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.infoBannerText}>
             <Text style={styles.infoBannerTitle}>Wholesale Ordering</Text>
             <Text style={styles.infoBannerSub}>
-              Order in cartons of 5 kg each · Minimum 1 carton per type
+              Order in bulk cartons · Minimum 1 carton per type
             </Text>
           </View>
         </View>
@@ -292,7 +300,7 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.howTitle}>How Ordering Works</Text>
           <View style={styles.howRow}>
             <View style={styles.howStep}><Ionicons name="add-circle-outline" size={20} color={COLORS.primary} /></View>
-            <Text style={styles.howTxt}>Choose cartons for each paneer type (1 carton = 5 kg)</Text>
+            <Text style={styles.howTxt}>Choose cartons for each product (Check details for weight)</Text>
           </View>
           <View style={styles.howRow}>
             <View style={styles.howStep}><Ionicons name="cart-outline" size={20} color={COLORS.primary} /></View>
@@ -421,9 +429,10 @@ const styles = StyleSheet.create({
     width: 60, height: 60, borderRadius: RADIUS.lg,
     backgroundColor: COLORS.primaryLight,
     justifyContent: 'center', alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.md, overflow: 'hidden'
   },
   iconWrapActive: { backgroundColor: COLORS.primary },
+  cardImage: { width: '100%', height: '100%', resizeMode: 'cover' },
 
   // Card text
   paneerName: { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark },

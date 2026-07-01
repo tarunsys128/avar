@@ -29,20 +29,32 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => setCart([]);
 
-  // Total = sum of (price_per_kg × CARTON_KG × cartons)
+  // Total price
   const getCartTotal = () =>
-    cart.reduce((sum, i) => sum + (i.price_per_kg * CARTON_KG * i.qty), 0);
+    cart.reduce((sum, i) => {
+      if (i.is_wholesale) {
+        const wholesalePrice = i.wholesale_price || (i.price_per_kg * (i.wholesale_qty || 5));
+        return sum + (wholesalePrice * i.qty);
+      }
+      return sum + ((i.retail_price || i.price_per_kg || 0) * i.qty);
+    }, 0);
 
-  // Total cartons in cart
+  // Total items in cart
   const getCartCount = () => cart.reduce((sum, i) => sum + i.qty, 0);
 
-  // Total kg in cart
-  const getCartKg = () => cart.reduce((sum, i) => sum + (i.qty * CARTON_KG), 0);
+  // Total kg/units in cart
+  const getCartKg = () => 
+    cart.reduce((sum, i) => {
+      if (i.is_wholesale) {
+         return sum + ((i.wholesale_qty || 5) * i.qty);
+      }
+      return sum + i.qty;
+    }, 0);
 
   return (
     <CartContext.Provider value={{
       cart, addToCart, updateQuantity, removeFromCart, clearCart,
-      getCartTotal, getCartCount, getCartKg, CARTON_KG,
+      getCartTotal, getCartCount, getCartKg
     }}>
       {children}
     </CartContext.Provider>

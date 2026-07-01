@@ -160,20 +160,24 @@ const AdminDashboardScreen = ({ navigation }) => {
         <Text style={s.sectionTitle}>Quick Actions</Text>
         <View style={s.actionGrid}>
           <TouchableOpacity style={s.actionBox} onPress={() => navigation.navigate('AdminCustomers')}>
-            <View style={[s.actionIcon, { backgroundColor: '#F3E8FF' }]}><Text style={{fontSize: 20}}>👥</Text></View>
+            <View style={[s.actionIcon, { backgroundColor: '#F3E8FF' }]}><Ionicons name="people" size={24} color="#9333EA" /></View>
             <Text style={s.actionTxt}>Manage Customers</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.actionBox} onPress={() => navigation.navigate('AdminProds')}>
-            <View style={[s.actionIcon, { backgroundColor: COLORS.yellowLight }]}><Text style={{fontSize: 20}}>🧀</Text></View>
+            <View style={[s.actionIcon, { backgroundColor: COLORS.yellowLight }]}><Ionicons name="cube" size={24} color={COLORS.yellow} /></View>
             <Text style={s.actionTxt}>Edit Catalog</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.actionBox} onPress={() => navigation.navigate('AdminOrds')}>
-            <View style={[s.actionIcon, { backgroundColor: COLORS.greenLight }]}><Text style={{fontSize: 20}}>📋</Text></View>
+            <View style={[s.actionIcon, { backgroundColor: COLORS.greenLight }]}><Ionicons name="list" size={24} color={COLORS.green} /></View>
             <Text style={s.actionTxt}>All Orders</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.actionBox} onPress={() => navigation.navigate('AdminAnalytics')}>
-            <View style={[s.actionIcon, { backgroundColor: '#FFEDD5' }]}><Text style={{fontSize: 20}}>📈</Text></View>
+            <View style={[s.actionIcon, { backgroundColor: '#FFEDD5' }]}><Ionicons name="stats-chart" size={24} color="#EA580C" /></View>
             <Text style={s.actionTxt}>Reports</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.actionBox} onPress={() => navigation.navigate('AdminNotifications')}>
+            <View style={[s.actionIcon, { backgroundColor: '#E0F2FE' }]}><Ionicons name="notifications" size={24} color="#0284C7" /></View>
+            <Text style={s.actionTxt}>Notify Users</Text>
           </TouchableOpacity>
         </View>
 

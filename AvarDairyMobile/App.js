@@ -49,6 +49,7 @@ export default function App() {
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#FF231F7C',
+          sound: 'default',
         });
         
         await Notifications.setNotificationChannelAsync('orders', {
@@ -56,6 +57,7 @@ export default function App() {
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 500, 250, 500],
           lightColor: '#10B981',
+          sound: 'default',
         });
       }
     } catch (e) {

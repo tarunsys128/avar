@@ -76,6 +76,14 @@ export const AuthProvider = ({ children }) => {
         Alert.alert('Access Denied', `This app is for Admins and Staff. Your role is ${role}.`);
         return;
       }
+      // Staff must be approved by admin
+      if (role === 'staff' && data?.is_approved === false) {
+        await supabase.auth.signOut();
+        setCurrentUser(null);
+        setUserRole(null);
+        Alert.alert('Pending Approval', 'Your staff account is awaiting Admin approval. Please contact your Admin.');
+        return;
+      }
     } else {
       // Customer app
       if (role !== 'customer' && role !== 'admin') {
@@ -154,7 +162,7 @@ export const AuthProvider = ({ children }) => {
     if (data?.user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, is_blocked')
+        .select('role, is_blocked, is_approved')
         .eq('id', data.user.id)
         .single();
         
@@ -170,6 +178,11 @@ export const AuthProvider = ({ children }) => {
         if (role !== 'admin' && role !== 'staff') {
           await supabase.auth.signOut();
           return { error: new Error(`Access Denied: This app is for Admins and Staff. Your role is ${role}.`) };
+        }
+        // Staff approval check
+        if (role === 'staff' && profile?.is_approved === false) {
+          await supabase.auth.signOut();
+          return { error: new Error('Your staff account is pending Admin approval. Please contact your Admin.') };
         }
       } else {
         if (role !== 'customer' && role !== 'admin') {
@@ -201,6 +214,13 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const resetPassword = async (email) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'avardairycustomer://reset-password', // or whatever your deep link scheme is
+    });
+    return { data, error };
+  };
+
   const logout = async () => {
     return supabase.auth.signOut();
   };
@@ -220,6 +240,7 @@ export const AuthProvider = ({ children }) => {
     userRole,
     loginWithEmail,
     signupWithEmail,
+    resetPassword,
     logout: currentUser?.id === 'mock-123' ? mockLogout : logout,
     refreshProfile,
     mockLogin,

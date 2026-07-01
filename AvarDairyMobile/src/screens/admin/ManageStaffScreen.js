@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 import { supabase } from '../../supabase';
+import { Ionicons } from '@expo/vector-icons';
 
 const ManageStaffScreen = ({ navigation }) => {
   const [staffList, setStaffList] = useState([]);
+  const [pendingList, setPendingList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Add/Edit Modal State
@@ -19,19 +21,29 @@ const ManageStaffScreen = ({ navigation }) => {
 
   const fetchStaffData = async () => {
     try {
-      // 1. Fetch Staff profiles
+      // 1. Fetch APPROVED Staff profiles
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'staff');
+        .eq('role', 'staff')
+        .neq('is_approved', false);
 
       if (error) throw error;
 
-      // 2. Fetch Active Orders to calculate active deliveries for each staff
+      // 2. Fetch PENDING (unapproved) Staff profiles
+      const { data: pendingProfiles, error: pendErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'staff')
+        .eq('is_approved', false);
+      
+      if (!pendErr) setPendingList(pendingProfiles || []);
+
+      // 3. Fetch Active Orders to calculate active deliveries for each staff
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('staff_id, status')
-        .in('status', ['Pending', 'Accepted', 'Preparing', 'Ready']); // active statuses
+        .in('status', ['Pending', 'Accepted', 'Preparing', 'Ready']);
 
       if (ordersError) throw ordersError;
 
@@ -47,6 +59,7 @@ const ManageStaffScreen = ({ navigation }) => {
         id: p.id,
         name: p.name || 'Unnamed',
         phone: p.phone || 'N/A',
+        email: p.email || '',
         status: p.is_available ? 'Active' : 'Offline',
         activeOrders: activeOrdersCount[p.id] || 0
       }));
@@ -85,13 +98,32 @@ const ManageStaffScreen = ({ navigation }) => {
           style: "destructive",
           onPress: async () => {
             setLoading(true);
-            const { error } = await supabase.from('profiles').update({ role: 'customer' }).eq('id', id);
+            const { error } = await supabase.from('profiles').update({ role: 'customer', is_approved: null }).eq('id', id);
             if (error) Alert.alert("Error", error.message);
             fetchStaffData();
           }
         }
       ]
     );
+  };
+
+  const handleApprove = async (id, staffName) => {
+    const { error } = await supabase.from('profiles').update({ is_approved: true }).eq('id', id);
+    if (error) Alert.alert('Error', error.message);
+    else Alert.alert('Approved', `${staffName} has been approved as staff.`);
+    fetchStaffData();
+  };
+
+  const handleReject = (id, staffName) => {
+    Alert.alert('Reject Staff', `Reject ${staffName}'s application and demote to customer?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Reject', style: 'destructive', onPress: async () => {
+        const { error } = await supabase.from('profiles').update({ role: 'customer', is_approved: null }).eq('id', id);
+        if (error) Alert.alert('Error', error.message);
+        else Alert.alert('Rejected', `${staffName} has been rejected.`);
+        fetchStaffData();
+      }}
+    ]);
   };
 
   const handleEdit = (staff) => {
@@ -176,16 +208,62 @@ const ManageStaffScreen = ({ navigation }) => {
          </View>
       ) : (
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+          
+          {/* ─── Pending Approvals Section ─── */}
+          {pendingList.length > 0 && (
+            <>
+              <View style={s.pendingHeader}>
+                <View style={s.pendingBadge}>
+                  <Ionicons name="time" size={16} color="#B45309" />
+                  <Text style={s.pendingBadgeTxt}>Pending Approvals ({pendingList.length})</Text>
+                </View>
+              </View>
+              {pendingList.map(staff => (
+                <View key={staff.id} style={s.pendingCard}>
+                  <View style={s.staffInfoRow}>
+                    <View style={[s.avatar, { backgroundColor: '#FEF3C7' }]}>
+                      <Ionicons name="person-add-outline" size={22} color="#B45309" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.staffName}>{staff.name || 'Unnamed'}</Text>
+                      <Text style={s.staffPhone}>{staff.email}</Text>
+                      {staff.phone ? <Text style={s.staffPhone}>{staff.phone}</Text> : null}
+                    </View>
+                  </View>
+                  <View style={s.pendingActions}>
+                    <TouchableOpacity 
+                      style={[s.approveBtn]} 
+                      onPress={() => handleApprove(staff.id, staff.name)}
+                    >
+                      <Ionicons name="checkmark" size={16} color="#fff" />
+                      <Text style={s.approveBtnTxt}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={s.rejectBtn} 
+                      onPress={() => handleReject(staff.id, staff.name)}
+                    >
+                      <Ionicons name="close" size={16} color={COLORS.danger} />
+                      <Text style={s.rejectBtnTxt}>Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+              <View style={s.sectionDivider} />
+            </>
+          )}
+
+          {/* ─── Active Staff Section ─── */}
+          <Text style={s.sectionLabel}>Active Staff ({staffList.length})</Text>
           {staffList.map(staff => (
             <View key={staff.id} style={s.staffCard}>
               <View style={s.staffInfoRow}>
                 <View style={s.avatar}>
-                  <Text style={s.avatarEmoji}>👨</Text>
+                  <Ionicons name="person" size={22} color={COLORS.primary} />
                   {staff.status === 'Active' && <View style={s.onlineDot} />}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.staffName}>{staff.name}</Text>
-                  <Text style={s.staffPhone}>📞 {staff.phone}</Text>
+                  <Text style={s.staffPhone}>{staff.phone}</Text>
                 </View>
                 <View style={[s.statusBadge, { backgroundColor: staff.status === 'Active' ? COLORS.greenLight : '#F3F4F6' }]}>
                   <Text style={[s.statusTxt, { color: staff.status === 'Active' ? COLORS.green : COLORS.textGray }]}>{staff.status}</Text>
@@ -205,9 +283,10 @@ const ManageStaffScreen = ({ navigation }) => {
               </View>
             </View>
           ))}
-          {staffList.length === 0 && (
+          {staffList.length === 0 && pendingList.length === 0 && (
             <View style={{alignItems: 'center', marginTop: 40}}>
-              <Text style={{color: COLORS.textGray}}>No staff members found.</Text>
+              <Ionicons name="people-outline" size={48} color={COLORS.textGray} />
+              <Text style={{color: COLORS.textGray, marginTop: 12}}>No staff members found.</Text>
             </View>
           )}
         </ScrollView>
@@ -276,7 +355,6 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md,
     position: 'relative'
   },
-  avatarEmoji: { fontSize: 24 },
   onlineDot: {
     position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, 
     borderRadius: 7, backgroundColor: COLORS.green, borderWidth: 2, borderColor: COLORS.white
@@ -299,6 +377,19 @@ const s = StyleSheet.create({
     ...SHADOW.lg, shadowColor: COLORS.yellow,
   },
   fabTxt: { color: COLORS.white, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.base },
+
+  // Pending section
+  pendingHeader: { marginBottom: SPACING.md },
+  pendingBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.md, alignSelf: 'flex-start' },
+  pendingBadgeTxt: { marginLeft: 6, fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold, color: '#92400E' },
+  pendingCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.md, borderWidth: 1.5, borderColor: '#FDE68A', ...SHADOW.sm },
+  pendingActions: { flexDirection: 'row', gap: 10, marginTop: SPACING.md, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: SPACING.md },
+  approveBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.green, paddingVertical: 10, borderRadius: RADIUS.md },
+  approveBtnTxt: { color: '#fff', fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.sm, marginLeft: 6 },
+  rejectBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', paddingVertical: 10, borderRadius: RADIUS.md },
+  rejectBtnTxt: { color: COLORS.danger, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.sm, marginLeft: 6 },
+  sectionDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: SPACING.lg },
+  sectionLabel: { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark, marginBottom: SPACING.md },
 
   // Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: SPACING.xl },

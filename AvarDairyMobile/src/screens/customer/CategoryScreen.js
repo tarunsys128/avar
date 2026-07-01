@@ -9,14 +9,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 
 const CATEGORIES = [
-  { id: 'all', label: 'All', emoji: '✨' },
-  { id: 'paneer', label: 'Paneer', emoji: '🧀' },
-  { id: 'cheese', label: 'Cheese', emoji: '🧀' },
-  { id: 'milk', label: 'Milk', emoji: '🥛' },
-  { id: 'butter', label: 'Butter', emoji: '🧈' },
-  { id: 'chaas', label: 'Chaas', emoji: '🥤' },
-  { id: 'others', label: 'Others', emoji: '📦' }
+  { id: 'all',    label: 'All',    icon: 'apps-outline' },
+  { id: 'paneer', label: 'Paneer', icon: 'cube-outline' },
+  { id: 'cheese', label: 'Cheese', icon: 'ellipse-outline' },
+  { id: 'milk',   label: 'Milk',   icon: 'water-outline' },
+  { id: 'butter', label: 'Butter', icon: 'layers-outline' },
+  { id: 'chaas',  label: 'Chaas',  icon: 'beer-outline' },
+  { id: 'others', label: 'Others', icon: 'grid-outline' },
 ];
+
+// Icon mapping for product fallback (when no image_url)
+const PRODUCT_ICON_MAP = {
+  paneer: 'cube-outline',
+  cheese: 'ellipse-outline',
+  milk: 'water-outline',
+  butter: 'layers-outline',
+  chaas: 'beer-outline',
+};
 
 // ─── Qty Button ────────────────────────────────────────────────────────────────
 const QtyControl = ({ item }) => {
@@ -43,7 +52,7 @@ const QtyControl = ({ item }) => {
   if (qty === 0) {
     return (
       <TouchableOpacity style={s.addCircle} onPress={() => addToCart(item)}>
-        <Text style={s.addCircleTxt}>＋</Text>
+        <Ionicons name="add" size={22} color={COLORS.white} />
       </TouchableOpacity>
     );
   }
@@ -54,39 +63,55 @@ const QtyControl = ({ item }) => {
         style={s.stepBtn}
         onPress={() => qty === 1 ? removeFromCart(item.id) : updateQuantity(item.id, qty - 1)}
       >
-        <Text style={s.stepBtnTxt}>−</Text>
+        <Ionicons name="remove" size={16} color={COLORS.textDark} />
       </TouchableOpacity>
       <Text style={s.stepCount}>{qty}</Text>
       <TouchableOpacity
         style={[s.stepBtn, { backgroundColor: COLORS.green, borderColor: COLORS.green }]}
         onPress={() => updateQuantity(item.id, qty + 1)}
       >
-        <Text style={[s.stepBtnTxt, { color: COLORS.white }]}>＋</Text>
+        <Ionicons name="add" size={16} color={COLORS.white} />
       </TouchableOpacity>
     </View>
   );
 };
 
 // ─── Product Row ───────────────────────────────────────────────────────────────
-const ProductRow = ({ item }) => (
-  <View style={s.productRow}>
-    <View style={s.productImg}>
-      {item.image_url ? (
-        <Image source={{ uri: item.image_url }} style={s.fullImg} />
-      ) : (
-        <Text style={{ fontSize: 44 }}>{item.emoji || '🧀'}</Text>
-      )}
+const ProductRow = ({ item }) => {
+  const iconName = PRODUCT_ICON_MAP[item.category?.toLowerCase()] || 'cube-outline';
+  return (
+    <View style={s.productRow}>
+      <View style={s.productImg}>
+        {item.image_url ? (
+          <Image source={{ uri: item.image_url }} style={s.fullImg} />
+        ) : (
+          <View style={s.productIconFallback}>
+            <Ionicons name={item.emoji || iconName} size={32} color={COLORS.primary} />
+          </View>
+        )}
+      </View>
+      <View style={s.productInfo}>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+           <Text style={s.productName} numberOfLines={1}>{item.name}</Text>
+           {item.is_wholesale && <View style={s.badgeWholesale}><Text style={s.badgeWholesaleTxt}>B2B</Text></View>}
+        </View>
+        
+        {item.subtitle ? <Text style={s.productSub} numberOfLines={1}>{item.subtitle}</Text> : null}
+
+        {item.is_retail && (
+          <Text style={s.productPrice}>₹{item.retail_price || item.price_per_kg} <Text style={s.unitTxt}>/ {item.unit_type || 'kg'}</Text></Text>
+        )}
+        
+        {item.is_wholesale && (
+          <Text style={s.bulkPrice}>Carton ({item.wholesale_qty || '-'} {item.unit_type}): ₹{item.wholesale_price || '-'}</Text>
+        )}
+      </View>
+      <View style={s.qtyWrapper}>
+        <QtyControl item={item} />
+      </View>
     </View>
-    <View style={s.productInfo}>
-      <Text style={s.productName} numberOfLines={1}>{item.name}</Text>
-      <Text style={s.productSub} numberOfLines={1}>{item.subtitle}</Text>
-      <Text style={s.productPrice}>₹{item.price}</Text>
-    </View>
-    <View style={s.qtyWrapper}>
-      <QtyControl item={item} />
-    </View>
-  </View>
-);
+  );
+};
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 const CategoryScreen = ({ navigation, route }) => {
@@ -162,7 +187,12 @@ const CategoryScreen = ({ navigation, route }) => {
               style={[s.filterChip, activeCat === cat.id && s.filterChipActive]}
               onPress={() => setActiveCat(cat.id)}
             >
-              <Text style={s.catEmojiMini}>{cat.emoji}</Text>
+              <Ionicons
+                name={cat.icon}
+                size={16}
+                color={activeCat === cat.id ? COLORS.white : COLORS.primary}
+                style={{ marginRight: 6 }}
+              />
               <Text style={[s.filterChipTxt, activeCat === cat.id && s.filterChipTxtActive]}>{cat.label}</Text>
             </TouchableOpacity>
           ))}
@@ -185,7 +215,7 @@ const CategoryScreen = ({ navigation, route }) => {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={s.empty}>
-                <Text style={{ fontSize: 48, marginBottom: 12 }}>📦</Text>
+                <Ionicons name="cube-outline" size={48} color={COLORS.textLight} />
                 <Text style={s.emptyTxt}>No products found in this category</Text>
               </View>
             }
@@ -196,7 +226,8 @@ const CategoryScreen = ({ navigation, route }) => {
       {/* ── Cart FAB ─── */}
       {cartCount > 0 && (
         <TouchableOpacity style={s.cartFab} onPress={() => navigation.navigate('CartTab')}>
-          <Text style={s.cartFabTxt}>🛒  View Cart  ·  {cartCount} items</Text>
+          <Ionicons name="cart" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
+          <Text style={s.cartFabTxt}>View Cart  ·  {cartCount} items</Text>
         </TouchableOpacity>
       )}
     </SafeAreaView>
@@ -216,7 +247,6 @@ const s = StyleSheet.create({
     ...SHADOW.sm,
   },
   backBtn:     { width: 40, height: 40, justifyContent: 'center' },
-  backArrow:   { fontSize: 24, color: COLORS.textDark },
   headerTitle: { flex: 1, fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
   headerRight: { flexDirection: 'row', gap: 8 },
   iconBtn: {
@@ -239,7 +269,6 @@ const s = StyleSheet.create({
     borderRadius: RADIUS.full, borderWidth: 1, borderColor: COLORS.border,
     backgroundColor: COLORS.white,
   },
-  catEmojiMini: { marginRight: 6, fontSize: 16 },
   filterChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   filterChipTxt: { fontSize: FONTS.sizes.sm, color: COLORS.textMed, fontWeight: FONTS.weights.medium },
   filterChipTxtActive: { color: COLORS.white, fontWeight: FONTS.weights.bold },
@@ -261,30 +290,38 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.bgLight, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md,
     overflow: 'hidden',
   },
+  productIconFallback: {
+    width: '100%', height: '100%',
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: COLORS.primaryLight,
+  },
   fullImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   productInfo: { flex: 1 },
-  productName:  { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
+  productName:  { flex: 1, fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
   productSub:   { fontSize: FONTS.sizes.xs,  color: COLORS.textGray, marginTop: 2 },
-  productPrice: { fontSize: FONTS.sizes.md,  fontWeight: FONTS.weights.extrabold, color: COLORS.textDark, marginTop: 6 },
+  productPrice: { fontSize: FONTS.sizes.md,  fontWeight: FONTS.weights.extrabold, color: COLORS.green, marginTop: 4 },
+  unitTxt:      { fontSize: FONTS.sizes.xs, color: COLORS.textGray, fontWeight: FONTS.weights.medium },
+  bulkPrice:    { fontSize: 10, color: '#9333EA', fontWeight: FONTS.weights.bold, marginTop: 2 },
+  badgeWholesale: { backgroundColor: '#F3E8FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 6 },
+  badgeWholesaleTxt: { color: '#9333EA', fontSize: 9, fontWeight: 'bold' },
   qtyWrapper: { marginLeft: 8 },
 
   // Add / Stepper
   addCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.green, justifyContent: 'center', alignItems: 'center', ...SHADOW.sm },
-  addCircleTxt: { color: COLORS.white, fontSize: 24, lineHeight: 26, marginTop: -2 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stepBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bgLight },
-  stepBtnTxt: { fontSize: 18, color: COLORS.textDark, lineHeight: 20 },
   stepCount:  { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold, color: COLORS.textDark, minWidth: 20, textAlign: 'center' },
 
   // Empty
   empty:    { flex: 1, alignItems: 'center', paddingTop: 60 },
-  emptyTxt: { color: COLORS.textGray, fontSize: FONTS.sizes.base, textAlign: 'center' },
+  emptyTxt: { color: COLORS.textGray, fontSize: FONTS.sizes.base, textAlign: 'center', marginTop: 12 },
 
   // Cart FAB
   cartFab: {
     position: 'absolute', bottom: 20, left: 20, right: 20,
     backgroundColor: COLORS.primary, borderRadius: RADIUS.full,
     paddingVertical: 16, alignItems: 'center',
+    flexDirection: 'row', justifyContent: 'center',
     ...SHADOW.lg, shadowColor: COLORS.primary,
   },
   cartFabTxt: { color: COLORS.white, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.base },

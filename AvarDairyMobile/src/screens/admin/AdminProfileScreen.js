@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 const AdminProfileScreen = ({ navigation }) => {
   const { currentUser, logout } = useAuth();
@@ -27,7 +28,7 @@ const AdminProfileScreen = ({ navigation }) => {
         {/* Profile Card */}
         <View style={s.profileCard}>
           <View style={s.avatar}>
-            <Text style={s.avatarEmoji}>👑</Text>
+            <Ionicons name="shield-checkmark" size={32} color="#B45309" />
           </View>
           <View style={s.profileInfo}>
             <Text style={s.name}>{name}</Text>
@@ -41,13 +42,13 @@ const AdminProfileScreen = ({ navigation }) => {
         {/* Settings Links */}
         <Text style={s.sectionTitle}>System Management</Text>
         <View style={s.menuGroup}>
-          <MenuRow icon="⚙️" title="General Settings" onPress={() => navigation.navigate('AdminSettings')} />
-          <MenuRow icon="📈" title="Analytics & Reports" onPress={() => navigation.navigate('AdminAnalytics')} />
+          <MenuRow icon="settings-outline" title="General Settings" onPress={() => navigation.navigate('AdminSettings')} />
+          <MenuRow icon="bar-chart-outline" title="Analytics & Reports" onPress={() => navigation.navigate('AdminAnalytics')} />
         </View>
 
         <Text style={s.sectionTitle}>Access Control</Text>
         <View style={s.menuGroup}>
-          <MenuRow icon="🔐" title="Change Password" onPress={() => navigation.navigate('AdminChangePassword')} />
+          <MenuRow icon="lock-closed-outline" title="Change Password" onPress={() => navigation.navigate('AdminChangePassword')} />
         </View>
 
         {/* Logout Button */}
@@ -62,9 +63,11 @@ const AdminProfileScreen = ({ navigation }) => {
 
 const MenuRow = ({ icon, title, onPress }) => (
   <TouchableOpacity style={s.menuRow} onPress={onPress}>
-    <View style={s.menuIconBox}><Text>{icon}</Text></View>
+    <View style={s.menuIconBox}>
+      <Ionicons name={icon} size={20} color={COLORS.primary} />
+    </View>
     <Text style={s.menuTitle}>{title}</Text>
-    <Text style={s.chevron}>›</Text>
+    <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
   </TouchableOpacity>
 );
 
@@ -83,7 +86,6 @@ const s = StyleSheet.create({
     width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.yellowLight,
     justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md
   },
-  avatarEmoji: { fontSize: 32 },
   profileInfo: { flex: 1 },
   name:  { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
   email: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 2 },
@@ -98,7 +100,6 @@ const s = StyleSheet.create({
   },
   menuIconBox: { width: 32, height: 32, borderRadius: 8, backgroundColor: COLORS.bgLight, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md },
   menuTitle: { flex: 1, fontSize: FONTS.sizes.base, color: COLORS.textDark, fontWeight: FONTS.weights.medium },
-  chevron: { fontSize: 24, color: COLORS.textLight, marginTop: -4 },
 
   logoutBtn: {
     backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',

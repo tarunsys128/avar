@@ -43,6 +43,7 @@ import EditCustomerProfileScreen from '../screens/customer/EditCustomerProfileSc
 import AdminCustomersScreen from '../screens/admin/AdminCustomersScreen';
 import AdminProductFormScreen from '../screens/admin/AdminProductFormScreen';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
+import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
 import AdminAnalyticsScreen from '../screens/admin/AdminAnalyticsScreen';
 import AdminChangePasswordScreen from '../screens/admin/AdminChangePasswordScreen';
 import ReminderSettingsScreen from '../screens/shared/ReminderSettingsScreen';
@@ -257,6 +258,7 @@ const AdminRootStack = () => (
     <AdminSt.Screen name="AdminProductForm" component={AdminProductFormScreen} />
     <AdminSt.Screen name="AdminSettings" component={AdminSettingsScreen} />
     <AdminSt.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />
+    <AdminSt.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
     <AdminSt.Screen name="AdminChangePassword" component={AdminChangePasswordScreen} />
     <AdminSt.Screen name="GenericSettings" component={GenericSettingsScreen} />
     <AdminSt.Screen name="Reminders" component={ReminderSettingsScreen} />

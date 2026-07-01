@@ -7,15 +7,17 @@ import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 import { useIsFocused } from '@react-navigation/native';
 import { Image } from 'expo-image';
 
+import { Ionicons } from '@expo/vector-icons';
+
 const MENU_ITEMS = [
-  { emoji: '📦', label: 'My Orders',      key: 'orders' },
-  { emoji: '📍', label: 'Saved Addresses', key: 'address' },
-  { emoji: '💳', label: 'Payment Methods', key: 'payment' },
-  { emoji: '🔔', label: 'Notifications',  key: 'notifs' },
-  { emoji: '🔒', label: 'Privacy & Security', key: 'privacy' },
-  { emoji: '📞', label: 'Help & Support', key: 'help' },
-  { emoji: '⏰', label: 'Order Reminders', key: 'reminders' },
-  { emoji: '⭐', label: 'Rate the App',   key: 'rate' },
+  { icon: 'cube-outline',       label: 'My Orders',      key: 'orders' },
+  { icon: 'location-outline',   label: 'Saved Addresses', key: 'address' },
+  { icon: 'card-outline',       label: 'Payment Methods', key: 'payment' },
+  { icon: 'notifications-outline', label: 'Notifications',  key: 'notifs' },
+  { icon: 'lock-closed-outline',label: 'Privacy & Security', key: 'privacy' },
+  { icon: 'call-outline',       label: 'Help & Support', key: 'help' },
+  { icon: 'alarm-outline',      label: 'Order Reminders', key: 'reminders' },
+  { icon: 'star-outline',       label: 'Rate the App',   key: 'rate' },
 ];
 
 const ProfileScreen = ({ navigation }) => {
@@ -116,7 +118,7 @@ const ProfileScreen = ({ navigation }) => {
               <Image source={{ uri: currentUser.avatar_url }} style={s.avatarImg} />
             ) : (
               <View style={s.avatarPlaceholder}>
-                <Text style={s.avatarEmoji}>👤</Text>
+                <Ionicons name="person" size={40} color={COLORS.primary} />
               </View>
             )}
           </View>
@@ -159,7 +161,7 @@ const ProfileScreen = ({ navigation }) => {
               style={[s.menuRow, idx < MENU_ITEMS.length - 1 && s.menuDivider]}
               onPress={() => handleMenuPress(item.key, item.label)}
             >
-              <Text style={s.menuEmoji}>{item.emoji}</Text>
+              <Ionicons name={item.icon} size={20} color={COLORS.primary} style={s.menuIcon} />
               <Text style={s.menuLabel}>{item.label}</Text>
               <Text style={s.menuArrow}>›</Text>
             </TouchableOpacity>
@@ -168,7 +170,8 @@ const ProfileScreen = ({ navigation }) => {
 
         {/* Logout */}
         <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
-          <Text style={s.logoutTxt}>🚪  Logout</Text>
+          <Ionicons name="log-out-outline" size={20} color={COLORS.danger} style={{marginRight: 8}} />
+          <Text style={s.logoutTxt}>Logout</Text>
         </TouchableOpacity>
 
         <View style={{ height: 30 }} />
@@ -198,7 +201,7 @@ const s = StyleSheet.create({
   },
   avatarImg: { width: '100%', height: '100%' },
   avatarPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  avatarEmoji: { fontSize: 40 },
+  menuIcon:    { marginRight: SPACING.md },
   userName:  { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
   userEmail: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 4 },
   userPhone: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 2 },
@@ -230,7 +233,7 @@ const s = StyleSheet.create({
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md + 2,
   },
   menuDivider: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  menuEmoji:   { fontSize: 20, marginRight: SPACING.md },
+  menuIcon:    { marginRight: SPACING.md },
   menuLabel:   { flex: 1, fontSize: FONTS.sizes.base, color: COLORS.textDark },
   menuArrow:   { fontSize: 20, color: COLORS.textGray },
 
