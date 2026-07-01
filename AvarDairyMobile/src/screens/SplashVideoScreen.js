@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, StyleSheet, Animated, StatusBar, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet, Animated, StatusBar, Dimensions, ActivityIndicator, Image } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -10,69 +10,106 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
   const videoRef = useRef(null);
-  const fadeAnim = useRef(new Animated.Value(1)).current; // start fully visible
-  const [videoReady, setVideoReady] = useState(false);
-  const [videoFinishedOnce, setVideoFinishedOnce] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const [nativeSplashHidden, setNativeSplashHidden] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoFinished, setVideoFinished] = useState(false);
+  const finishCalled = useRef(false);
 
-  // Hide native splash once our screen is mounted and video is loaded
-  const handleLoad = async () => {
-    await SplashScreen.hideAsync().catch(() => {});
-    setVideoReady(true);
-  };
-
-  // We are ready to transition IF the video has finished playing at least once AND we aren't loading auth
+  // Step 1: Hide native splash screen IMMEDIATELY on first render
+  // This ensures users see our black screen instead of the stuck logo
   useEffect(() => {
-    if (videoFinishedOnce && !isAuthLoading) {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }).start(() => {
-        onFinish?.();
-      });
-    }
-  }, [videoFinishedOnce, isAuthLoading]);
-
-  // Fallback: If 5 seconds have passed, consider it "finished once" and force hide native splash
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      await SplashScreen.hideAsync().catch(() => {});
-      setVideoFinishedOnce(true);
-    }, 5000);
-    return () => clearTimeout(timer);
+    const hideNative = async () => {
+      try {
+        await SplashScreen.hideAsync();
+      } catch (e) {
+        // Already hidden or not available
+      }
+      setNativeSplashHidden(true);
+    };
+    hideNative();
   }, []);
 
-  const handlePlaybackStatusUpdate = (status) => {
-    if (status.didJustFinish || (status.positionMillis >= 4900 && status.isPlaying)) {
-      setVideoFinishedOnce(true);
+  // Step 2: Transition away when conditions are met
+  const doFinish = useCallback(() => {
+    if (finishCalled.current) return;
+    finishCalled.current = true;
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => {
+      onFinish?.();
+    });
+  }, [onFinish, fadeAnim]);
+
+  useEffect(() => {
+    if (videoFinished && !isAuthLoading) {
+      doFinish();
+    }
+  }, [videoFinished, isAuthLoading, doFinish]);
+
+  // Step 3: Absolute safety net — after 8 seconds, skip everything no matter what
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      setVideoFinished(true);
+      // If auth is STILL loading after 8s, force finish anyway
+      // (better to show login than a black screen forever)
+      setTimeout(() => {
+        doFinish();
+      }, 500);
+    }, 8000);
+    return () => clearTimeout(safetyTimer);
+  }, [doFinish]);
+
+  // Video callbacks
+  const handleVideoLoad = () => {
+    setVideoPlaying(true);
+  };
+
+  const handlePlaybackStatus = (status) => {
+    if (status.didJustFinish) {
+      setVideoFinished(true);
     }
   };
 
-  const handleError = async () => {
-    await SplashScreen.hideAsync().catch(() => {});
-    setVideoFinishedOnce(true);
+  const handleVideoError = () => {
+    // Video failed to load (codec issue, missing file, etc.)
+    // Skip intro entirely — don't get stuck
+    setVideoFinished(true);
   };
 
   return (
     <Animated.View style={[s.container, { opacity: fadeAnim }]}>
       <StatusBar hidden />
+
+      {/* Show app logo briefly while video is loading */}
+      {!videoPlaying && (
+        <View style={s.logoContainer}>
+          <Image
+            source={require('../../assets/images/icon.png')}
+            style={s.logo}
+            resizeMode="contain"
+          />
+        </View>
+      )}
+
+      {/* The video player — hidden behind logo until loaded */}
       <Video
         ref={videoRef}
         source={require('../../assets/intro.mp4')}
-        style={s.video}
+        style={[s.video, !videoPlaying && s.hiddenVideo]}
         resizeMode={ResizeMode.COVER}
         shouldPlay
         isMuted={false}
-        isLooping={true} // Loop continuously if auth takes a long time (network issue)
-        onLoad={handleLoad}
-        onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
-        onError={handleError}
+        isLooping={false}
+        onLoad={handleVideoLoad}
+        onPlaybackStatusUpdate={handlePlaybackStatus}
+        onError={handleVideoError}
       />
-      {/* Subtle dark vignette at edges for polish */}
-      <View style={s.vignette} pointerEvents="none" />
-      
-      {/* Professional subtle loading spinner ONLY if video finished but auth is STILL loading (network issue) */}
-      {videoFinishedOnce && isAuthLoading && (
+
+      {/* Loading spinner if auth is still in progress after video ends */}
+      {videoFinished && isAuthLoading && (
         <View style={s.loadingOverlay}>
           <ActivityIndicator size="large" color="#10B981" />
         </View>
@@ -83,18 +120,31 @@ const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
 
 const s = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     backgroundColor: '#000',
-    zIndex: 999,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    zIndex: 2,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    borderRadius: 24,
   },
   video: {
+    position: 'absolute',
     width,
     height,
+    zIndex: 3,
   },
-  vignette: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
-    shadowColor: '#000',
+  hiddenVideo: {
+    opacity: 0,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -103,6 +153,7 @@ const s = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
 });
 
