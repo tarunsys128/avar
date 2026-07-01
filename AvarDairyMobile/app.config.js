@@ -51,7 +51,7 @@ module.exports = () => {
         favicon: './assets/images/favicon.png',
       },
       splash: {
-        image: './assets/images/icon.png',
+        image: './assets/images/blank.png',
         resizeMode: 'contain',
         backgroundColor: '#000000',
       },
@@ -59,7 +59,7 @@ module.exports = () => {
         [
           'expo-splash-screen',
           {
-            image: './assets/images/icon.png',
+            image: './assets/images/blank.png',
             imageWidth: 120,
             resizeMode: 'contain',
             backgroundColor: '#000000',
