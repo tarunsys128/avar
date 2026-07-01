@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, Animated, StatusBar, Dimensions, ActivityIndicator, Image } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
 import * as SplashScreen from 'expo-splash-screen';
 
 const { width, height } = Dimensions.get('screen');
@@ -9,107 +8,75 @@ const { width, height } = Dimensions.get('screen');
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
-  const videoRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const [nativeSplashHidden, setNativeSplashHidden] = useState(false);
-  const [videoPlaying, setVideoPlaying] = useState(false);
-  const [videoFinished, setVideoFinished] = useState(false);
+  const [gifFinished, setGifFinished] = useState(false);
   const finishCalled = useRef(false);
+  const splashHidden = useRef(false);
 
-  // Step 1: Hide native splash screen IMMEDIATELY on first render
-  // This ensures users see our black screen instead of the stuck logo
-  useEffect(() => {
-    const hideNative = async () => {
-      try {
-        await SplashScreen.hideAsync();
-      } catch (e) {
-        // Already hidden or not available
-      }
-      setNativeSplashHidden(true);
-    };
-    hideNative();
+  // Hide native splash ASAP
+  const hideSplash = useCallback(async () => {
+    if (splashHidden.current) return;
+    splashHidden.current = true;
+    try { await SplashScreen.hideAsync(); } catch (e) {}
   }, []);
 
-  // Step 2: Transition away when conditions are met
+  // Called once to fade out and transition
   const doFinish = useCallback(() => {
     if (finishCalled.current) return;
     finishCalled.current = true;
+    hideSplash();
     Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 500,
+      duration: 400,
       useNativeDriver: true,
     }).start(() => {
       onFinish?.();
     });
-  }, [onFinish, fadeAnim]);
+  }, [onFinish, fadeAnim, hideSplash]);
 
+  // When GIF finishes its time AND auth is done → transition
   useEffect(() => {
-    if (videoFinished && !isAuthLoading) {
+    if (gifFinished && !isAuthLoading) {
       doFinish();
     }
-  }, [videoFinished, isAuthLoading, doFinish]);
+  }, [gifFinished, isAuthLoading, doFinish]);
 
-  // Step 3: Absolute safety net — after 8 seconds, skip everything no matter what
+  // SAFETY: After 6 seconds, force finish no matter what
   useEffect(() => {
-    const safetyTimer = setTimeout(() => {
-      setVideoFinished(true);
-      // If auth is STILL loading after 8s, force finish anyway
-      // (better to show login than a black screen forever)
-      setTimeout(() => {
-        doFinish();
-      }, 500);
-    }, 8000);
-    return () => clearTimeout(safetyTimer);
-  }, [doFinish]);
-
-  // Video callbacks
-  const handleVideoLoad = () => {
-    setVideoPlaying(true);
-  };
-
-  const handlePlaybackStatus = (status) => {
-    if (status.didJustFinish) {
-      setVideoFinished(true);
-    }
-  };
-
-  const handleVideoError = () => {
-    // Video failed to load (codec issue, missing file, etc.)
-    // Skip intro entirely — don't get stuck
-    setVideoFinished(true);
-  };
+    const t = setTimeout(() => {
+      hideSplash();
+      setGifFinished(true);
+      // Extra safety: force if auth is still loading
+      setTimeout(() => doFinish(), 1000);
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [doFinish, hideSplash]);
 
   return (
     <Animated.View style={[s.container, { opacity: fadeAnim }]}>
       <StatusBar hidden />
-
-      {/* Show app logo briefly while video is loading */}
-      {!videoPlaying && (
-        <View style={s.logoContainer}>
-          <Image
-            source={require('../../assets/images/icon.png')}
-            style={s.logo}
-            resizeMode="contain"
-          />
-        </View>
-      )}
-
-      {/* The video player — hidden behind logo until loaded */}
-      <Video
-        ref={videoRef}
-        source={require('../../assets/intro.mp4')}
-        style={[s.video, !videoPlaying && s.hiddenVideo]}
-        resizeMode={ResizeMode.COVER}
-        shouldPlay
-        isMuted={false}
-        isLooping={false}
-        onLoad={handleVideoLoad}
-        onPlaybackStatusUpdate={handlePlaybackStatus}
-        onError={handleVideoError}
+      <Image
+        source={require('../../assets/intro.gif')}
+        style={s.gif}
+        resizeMode="cover"
+        onLoad={() => {
+          // GIF frame visible → hide native splash immediately
+          hideSplash();
+          // Allow GIF to play for a fixed amount of time (e.g. 3.5 seconds) 
+          // before considering it "finished"
+          setTimeout(() => {
+            setGifFinished(true);
+          }, 3500);
+        }}
+        onError={() => {
+          // If GIF fails to load → skip intro
+          hideSplash();
+          setGifFinished(true);
+        }}
       />
-
-      {/* Loading spinner if auth is still in progress after video ends */}
-      {videoFinished && isAuthLoading && (
+      
+      {/* Loading spinner if waiting for network after GIF finishes */}
+      {gifFinished && isAuthLoading && (
         <View style={s.loadingOverlay}>
           <ActivityIndicator size="large" color="#10B981" />
         </View>
@@ -122,29 +89,13 @@ const s = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  logoContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-    zIndex: 2,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 24,
-  },
-  video: {
+  gif: {
     position: 'absolute',
+    top: 0,
+    left: 0,
     width,
     height,
-    zIndex: 3,
-  },
-  hiddenVideo: {
-    opacity: 0,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -152,8 +103,6 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
   },
 });
 
