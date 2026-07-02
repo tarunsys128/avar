@@ -272,26 +272,13 @@ const AuthStack = () => (
 );
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
+export const AppNavigator = () => {
   const { currentUser, userRole, loading } = useAuth();
   const appVariant = Constants.expoConfig?.extra?.variant || 'customer';
-  
-  // Skip GIF splash completely for the admin app to make it extremely lightweight
-  const [introFinished, setIntroFinished] = useState(appVariant === 'admin');
+  const [introFinished, setIntroFinished] = useState(false);
 
-  // Show intro video for customer app, or just wait for auth for admin
+  // Show intro video immediately, and hold it if app is still loading config/auth
   if (!introFinished || loading) {
-    if (appVariant === 'admin') {
-      return (
-        <View style={{ flex: 1, backgroundColor: COLORS.bgLight, justifyContent: 'center', alignItems: 'center' }}>
-          <Image 
-            source={require('../../assets/images/icon.png')} 
-            style={{ width: 120, height: 120, marginBottom: 20 }} 
-            resizeMode="contain"
-          />
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      );
-    }
     return <SplashVideoScreen onFinish={() => setIntroFinished(true)} isAuthLoading={loading} />;
   }
 
