@@ -57,10 +57,11 @@ export const AuthProvider = ({ children }) => {
       .eq('id', user.id)
       .single();
     
-    const role = data ? data.role : 'customer';
+    const createdProfile = data || (await getOrCreateMissingProfile(user));
+    const role = createdProfile ? createdProfile.role : 'customer';
     const appVariant = Constants.expoConfig?.extra?.variant || 'customer';
 
-    if (data?.is_blocked) {
+    if (createdProfile?.is_blocked) {
       await supabase.auth.signOut();
       setCurrentUser(null);
       setUserRole(null);
@@ -93,11 +94,13 @@ export const AuthProvider = ({ children }) => {
         Alert.alert('Access Denied', `This app is for Customers. Your role is ${role}.`);
         return;
       }
+      // Wait, we need to ensure the profile is evaluated with proper role
+      // But the missing profile gets resolved above!
     }
 
-    if (data) {
-      setUserRole(data.role);
-      setCurrentUser({ ...(session?.user || user), ...data });
+    if (createdProfile) {
+      setUserRole(createdProfile.role);
+      setCurrentUser({ ...(session?.user || user), ...createdProfile });
       
       // Register push token and save to DB (only if we have a session)
       if (session) {
@@ -106,28 +109,36 @@ export const AuthProvider = ({ children }) => {
         });
       }
     } else {
-      // Create missing profile
-      const newProfile = {
-        id: user.id,
-        email: user.email,
-        name: user.user_metadata?.name || 'Customer',
-        role: 'customer',
-        created_at: new Date().toISOString()
-      };
-      const { data: created, error: createErr } = await supabase
-        .from('profiles')
-        .insert(newProfile)
-        .select()
-        .single();
-      
-      if (!createErr && created) {
-        setUserRole('customer');
-        setCurrentUser({ ...(session?.user || user), ...created });
-      } else {
-        setUserRole('customer');
-        setCurrentUser(session?.user || user);
-      }
+      setUserRole('customer');
+      setCurrentUser(session?.user || user);
     }
+  };
+
+  const getOrCreateMissingProfile = async (user) => {
+    // Create missing profile based on user metadata
+    const metadataRole = user.user_metadata?.role || 'customer';
+    const isStaff = metadataRole === 'staff';
+    
+    const newProfile = {
+      id: user.id,
+      email: user.email,
+      name: user.user_metadata?.name || 'Customer',
+      phone: user.user_metadata?.phone || '',
+      role: metadataRole,
+      is_approved: isStaff ? false : null,
+      created_at: new Date().toISOString()
+    };
+    
+    const { data: created, error: createErr } = await supabase
+      .from('profiles')
+      .insert(newProfile)
+      .select()
+      .single();
+      
+    if (!createErr && created) {
+      return created;
+    }
+    return newProfile;
   };
 
   const subscribeToProfile = (userId) => {

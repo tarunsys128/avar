@@ -41,30 +41,24 @@ const LoginScreen = () => {
         // Staff signup flow
         if (!name) { setErrorMessage('Please enter your name.'); setLoading(false); return; }
         
-        // 1. Create auth account
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        // 1. Create auth account with metadata so AuthContext knows it's a staff signup
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              name: name,
+              phone: phone || '',
+              role: 'staff'
+            }
+          }
+        });
+        
         if (error) throw error;
         
-        if (data.user) {
-          // 2. Create profile with role = 'staff' and is_approved = false
-          const { error: profileError } = await supabase.from('profiles').insert({
-            id: data.user.id,
-            email: email,
-            name: name,
-            phone: phone || '',
-            role: 'staff',
-            is_approved: false,
-            is_available: false,
-          });
-          if (profileError) throw profileError;
-        }
-        
-        Alert.alert(
-          'Account Created!', 
-          'Your staff account has been created. Please wait for the Admin to approve your account before you can login.',
-          [{ text: 'OK', onPress: () => { setIsLogin(true); setEmail(''); setPassword(''); setName(''); setPhone(''); } }]
-        );
+        // Profile creation and alerts are now handled by AuthContext.js via onAuthStateChange
         setLoading(false);
+        setIsLogin(true); // reset to login view for after approval
         return;
       }
     } catch (e) {
