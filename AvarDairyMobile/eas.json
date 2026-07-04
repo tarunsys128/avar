@@ -5,6 +5,7 @@
   },
   "build": {
     "preview-customer": {
+      "channel": "customer",
       "android": {
         "buildType": "apk"
       },
@@ -13,8 +14,8 @@
         "EXPO_PUBLIC_APP_VARIANT": "customer"
       }
     },
-
     "preview-admin": {
+      "channel": "admin",
       "android": {
         "buildType": "apk"
       },
@@ -24,10 +25,14 @@
       }
     },
     "production": {
+      "channel": "production",
       "env": {
         "APP_VARIANT": "customer",
         "EXPO_PUBLIC_APP_VARIANT": "customer"
       }
     }
+  },
+  "update": {
+    "channel": "customer"
   }
 }

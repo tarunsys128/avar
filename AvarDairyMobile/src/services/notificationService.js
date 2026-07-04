@@ -1,7 +1,7 @@
 /**
  * notificationService.js
  * Handles Expo push token registration, local notifications,
- * and writing notification records to Supabase.
+ * writing notification records to Supabase, and staff alerts.
  */
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
@@ -20,11 +20,9 @@ Notifications.setNotificationHandler({
 // ─── Register for Push Notifications & return Expo push token ─────────────────
 export async function registerForPushNotifications() {
   if (!Device.isDevice) {
-    // Simulator/emulator — skip (no real push token available)
     return null;
   }
 
-  // Request permission
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -38,13 +36,20 @@ export async function registerForPushNotifications() {
     return null;
   }
 
-  // Android: create notification channel
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('orders', {
       name: 'Order Updates',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#10B981',
+      sound: 'default',
+    });
+    await Notifications.setNotificationChannelAsync('staff', {
+      name: 'Staff Alerts',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 250, 500],
+      lightColor: '#6366F1',
+      sound: 'default',
     });
     await Notifications.setNotificationChannelAsync('general', {
       name: 'General',
@@ -52,7 +57,6 @@ export async function registerForPushNotifications() {
     });
   }
 
-  // Get Expo push token
   try {
     const tokenData = await Notifications.getExpoPushTokenAsync({
       projectId: '94dcbafa-0205-4cef-9609-062fa8d09cdf',
@@ -72,6 +76,7 @@ export async function savePushToken(userId, token) {
       .from('profiles')
       .update({ push_token: token })
       .eq('id', userId);
+    console.log('[Notifications] Push token saved for user:', userId);
   } catch (err) {
     console.log('[Notifications] Failed to save push token:', err.message);
   }
@@ -85,13 +90,81 @@ export async function sendLocalNotification({ title, body, data = {}, channelId 
         title,
         body,
         data,
-        sound: true,
+        sound: 'default',
         ...(Platform.OS === 'android' && { channelId }),
       },
       trigger: null,
     });
   } catch (err) {
     console.log('[Notifications] Failed to send local notification:', err.message);
+  }
+}
+
+// ─── Send Expo Push Notification to specific tokens via Expo Push API ─────────
+async function sendExpoPushNotification(tokens, title, body, data = {}) {
+  if (!tokens || tokens.length === 0) return;
+
+  const messages = tokens.map(to => ({
+    to,
+    title,
+    body,
+    data,
+    sound: 'default',
+    priority: 'high',
+    channelId: 'staff',
+  }));
+
+  try {
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messages),
+    });
+    const result = await response.json();
+    console.log('[Notifications] Expo push result:', JSON.stringify(result?.data?.slice(0, 2)));
+  } catch (err) {
+    console.log('[Notifications] Expo push API failed:', err.message);
+  }
+}
+
+// ─── Notify All Available (On-Duty) Staff via Push ────────────────────────────
+export async function notifyAvailableStaff({ orderId, message }) {
+  try {
+    const { data: staffList, error } = await supabase
+      .from('profiles')
+      .select('id, push_token, name')
+      .eq('role', 'staff')
+      .eq('is_available', true)
+      .eq('is_approved', true)
+      .not('push_token', 'is', null);
+
+    if (error) {
+      console.log('[Notifications] Failed to fetch staff:', error.message);
+      return { sent: 0 };
+    }
+
+    const validTokens = (staffList || [])
+      .map(s => s.push_token)
+      .filter(t => t && t.startsWith('ExponentPushToken'));
+
+    if (validTokens.length === 0) {
+      console.log('[Notifications] No staff with valid push tokens found');
+      return { sent: 0 };
+    }
+
+    const title = '🔔 Order Reminder!';
+    const body = message || `New order needs attention! #${orderId?.slice(-6)?.toUpperCase() || 'ORDER'}`;
+
+    await sendExpoPushNotification(validTokens, title, body, { orderId, type: 'staff_alert' });
+
+    return { sent: validTokens.length };
+  } catch (err) {
+    console.log('[Notifications] notifyAvailableStaff error:', err.message);
+    return { sent: 0 };
   }
 }
 
@@ -115,10 +188,9 @@ export async function createNotification({ userId, title, body, type = 'general'
 // ─── Notify all admins and all staff about a new order ────────────────────────
 export async function notifyStaffAndAdmin({ orderId, customerName, totalAmount }) {
   try {
-    // Fetch all admin + staff users
     const { data: staffAdmins, error } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, push_token, role')
       .in('role', ['admin', 'staff']);
 
     if (error || !staffAdmins) return;
@@ -126,7 +198,6 @@ export async function notifyStaffAndAdmin({ orderId, customerName, totalAmount }
     const title = '🛒 New Order Received!';
     const body = `${customerName || 'A customer'} placed an order of ₹${totalAmount}`;
 
-    // Bulk insert notifications for all staff/admin
     const rows = staffAdmins.map(u => ({
       user_id: u.id,
       title,
@@ -138,6 +209,15 @@ export async function notifyStaffAndAdmin({ orderId, customerName, totalAmount }
 
     if (rows.length > 0) {
       await supabase.from('notifications').insert(rows);
+    }
+
+    // Also push via Expo to admin/staff tokens
+    const tokens = staffAdmins
+      .map(s => s.push_token)
+      .filter(t => t && t.startsWith('ExponentPushToken'));
+    
+    if (tokens.length > 0) {
+      await sendExpoPushNotification(tokens, title, body, { orderId, type: 'order_placed' });
     }
   } catch (err) {
     console.log('[Notifications] Failed to notify staff/admin:', err.message);
@@ -151,7 +231,7 @@ export async function notifyCustomerOrderStatus({ customerId, orderId, newStatus
   const messages = {
     Accepted:          { title: '✅ Order Accepted!',       body: 'Your order has been accepted and will be processed shortly.' },
     Preparing:         { title: '👨‍🍳 Order Being Prepared!', body: 'Our team is preparing your fresh dairy products.' },
-    Ready:             { title: '📦 Order Ready!',          body: 'Your order is packed and ready for pickup/delivery.' },
+    Ready:             { title: '📦 Order Ready!',          body: 'Your order is packed and ready.' },
     'Out for Delivery':{ title: '🛵 Out for Delivery!',     body: 'Your order is on the way. Expect it soon!' },
     Delivered:         { title: '🏠 Order Delivered!',      body: 'Your order has been delivered. Enjoy your dairy products!' },
     Cancelled:         { title: '❌ Order Cancelled',       body: 'Your order has been cancelled. Contact us if you need help.' },
@@ -161,6 +241,7 @@ export async function notifyCustomerOrderStatus({ customerId, orderId, newStatus
   if (!msg) return;
 
   try {
+    // Save in-app notification
     await createNotification({
       userId: customerId,
       title: msg.title,
@@ -168,6 +249,22 @@ export async function notifyCustomerOrderStatus({ customerId, orderId, newStatus
       type: 'order_status',
       orderId,
     });
+
+    // Also send push to customer device
+    const { data: customerProfile } = await supabase
+      .from('profiles')
+      .select('push_token')
+      .eq('id', customerId)
+      .single();
+
+    if (customerProfile?.push_token?.startsWith('ExponentPushToken')) {
+      await sendExpoPushNotification(
+        [customerProfile.push_token],
+        msg.title,
+        msg.body,
+        { orderId, type: 'order_status' }
+      );
+    }
   } catch (err) {
     console.log('[Notifications] Failed to notify customer:', err.message);
   }

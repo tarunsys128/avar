@@ -118,11 +118,16 @@ export const AuthProvider = ({ children }) => {
     // Create missing profile based on user metadata
     const metadataRole = user.user_metadata?.role || 'customer';
     const isStaff = metadataRole === 'staff';
+    // Use name from metadata, fallback to email prefix (never hardcode 'Customer')
+    const displayName = user.user_metadata?.name 
+      || user.user_metadata?.full_name
+      || user.email?.split('@')[0] 
+      || 'User';
     
     const newProfile = {
       id: user.id,
       email: user.email,
-      name: user.user_metadata?.name || 'Customer',
+      name: displayName,
       phone: user.user_metadata?.phone || '',
       role: metadataRole,
       is_approved: isStaff ? false : null,

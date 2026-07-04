@@ -25,7 +25,7 @@ const StaffDashboardScreen = () => {
     const { data, error } = await supabase
       .from('orders')
       .select(`*, profiles:customer_id (name, phone, avatar_url)`)
-      .in('status', ['Pending', 'Accepted', 'Preparing', 'Ready'])
+      .in('status', ['Pending', 'Accepted'])
       .order('created_at', { ascending: true });
 
     if (!error && data) {
@@ -103,6 +103,11 @@ const StaffDashboardScreen = () => {
   const updateStatus = async (order) => {
     const nextStatus = STATUS_FLOW[order.status] || 'Delivered';
     
+    // OPTIMISTIC: update local state immediately so button changes instantly
+    setOrders(prev =>
+      prev.map(o => o.id === order.id ? { ...o, status: nextStatus } : o)
+    );
+
     try {
       const updatePayload = {
         status: nextStatus,
@@ -122,16 +127,16 @@ const StaffDashboardScreen = () => {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      if (order.status === 'Pending') {
-        setActiveTab('Active');
-      }
-
       await notifyCustomerOrderStatus({
         customerId: order.customer_id,
         orderId: order.id,
         newStatus: nextStatus,
       });
     } catch (err) {
+      // Revert on failure
+      setOrders(prev =>
+        prev.map(o => o.id === order.id ? { ...o, status: order.status } : o)
+      );
       console.error('Update Status Error:', err);
       Alert.alert('Error', err.message || 'Failed to update order status');
     }

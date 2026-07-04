@@ -98,7 +98,16 @@ const s = StyleSheet.create({
   
   card: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, ...SHADOW.sm, padding: SPACING.lg },
   label: { fontSize: FONTS.sizes.sm, color: COLORS.textDark, fontWeight: FONTS.weights.medium, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: RADIUS.md, padding: SPACING.md, fontSize: FONTS.sizes.base, marginBottom: SPACING.lg, backgroundColor: '#FAFAFA' },
+  input: { 
+    borderWidth: 1, 
+    borderColor: COLORS.border, 
+    borderRadius: RADIUS.md, 
+    padding: SPACING.md, 
+    fontSize: FONTS.sizes.base, 
+    marginBottom: SPACING.lg, 
+    backgroundColor: '#FAFAFA',
+    color: COLORS.textDark,  // Fix: explicit color so it's visible on all Android themes
+  },
 
   saveBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.lg, padding: SPACING.md, alignItems: 'center', marginTop: SPACING.sm },
   saveBtnTxt: { color: COLORS.white, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.base },

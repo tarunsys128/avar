@@ -73,6 +73,7 @@ module.exports = () => {
             "sounds": []
           }
         ],
+        "expo-updates",
         "expo-av"
       ],
       updates: {

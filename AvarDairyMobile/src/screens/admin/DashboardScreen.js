@@ -9,7 +9,10 @@ import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 
 const AdminDashboardScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
-  const name = currentUser?.name || 'Admin';
+  // Use actual name → fallback to email prefix → fallback to 'Admin'
+  const name = currentUser?.name 
+    || currentUser?.email?.split('@')[0] 
+    || 'Admin';
   
   const [stats, setStats] = useState({ revenue: 0, totalOrders: 0, pendingOrders: 0, activeStaff: 0 });
   const [recentActivity, setRecentActivity] = useState([]);
