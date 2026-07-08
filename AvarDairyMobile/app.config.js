@@ -77,7 +77,9 @@ module.exports = () => {
         "expo-av"
       ],
       updates: {
-        url: `https://u.expo.dev/94dcbafa-0205-4cef-9609-062fa8d09cdf`
+        url: `https://u.expo.dev/94dcbafa-0205-4cef-9609-062fa8d09cdf`,
+        fallbackToCacheTimeout: 5000,
+        checkAutomatically: 'ON_LOAD'
       },
       runtimeVersion: {
         policy: "appVersion"
