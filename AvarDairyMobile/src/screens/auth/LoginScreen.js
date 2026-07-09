@@ -41,7 +41,8 @@ const LoginScreen = () => {
         // Staff signup flow
         if (!name) { setErrorMessage('Please enter your name.'); setLoading(false); return; }
         
-        // 1. Create auth account with metadata so AuthContext knows it's a staff signup
+        // 1. Create auth account with proper role
+        const role = isAdminApp ? 'staff' : 'customer';
         const { data, error } = await supabase.auth.signUp({ 
           email, 
           password,
@@ -49,7 +50,7 @@ const LoginScreen = () => {
             data: {
               name: name,
               phone: phone || '',
-              role: 'staff'
+              role: role
             }
           }
         });
@@ -274,7 +275,7 @@ const LoginScreen = () => {
             <TouchableOpacity style={s.primaryBtn} onPress={handleAuth} disabled={loading}>
               {loading
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={s.primaryBtnTxt}>{isLogin ? 'Sign In' : 'Create Staff Account'}</Text>
+                : <Text style={s.primaryBtnTxt}>{isLogin ? 'Sign In' : (isAdminApp ? 'Create Staff Account' : 'Create Account')}</Text>
               }
             </TouchableOpacity>
           </View>
