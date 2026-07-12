@@ -9,6 +9,7 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabase';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
+import ProductPlaceholder from '../../components/ProductPlaceholder';
 
 const { width } = Dimensions.get('window');
 const CARTON_KG = 5; // 1 carton = 5 kg
@@ -81,7 +82,7 @@ const PaneerCard = ({ item }) => {
         {item.image_url ? (
            <Image source={{uri: item.image_url}} style={styles.cardImage} />
         ) : (
-           <Ionicons name={iconName} size={32} color={cartons > 0 ? COLORS.white : COLORS.primary} />
+           <ProductPlaceholder category={item.category} size={56} />
         )}
       </View>
 

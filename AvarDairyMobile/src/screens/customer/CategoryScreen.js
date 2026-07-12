@@ -7,6 +7,7 @@ import { useCart } from '../../context/CartContext';
 import { supabase } from '../../supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
+import ProductPlaceholder from '../../components/ProductPlaceholder';
 
 const CATEGORIES = [
   { id: 'all',    label: 'All',    icon: 'apps-outline' },
@@ -85,9 +86,7 @@ const ProductRow = ({ item }) => {
         {item.image_url ? (
           <Image source={{ uri: item.image_url }} style={s.fullImg} />
         ) : (
-          <View style={s.productIconFallback}>
-            <Ionicons name={item.emoji || iconName} size={32} color={COLORS.primary} />
-          </View>
+          <ProductPlaceholder category={item.category} size={60} />
         )}
       </View>
       <View style={s.productInfo}>

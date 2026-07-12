@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../supabase';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
+import ProductPlaceholder from '../../components/ProductPlaceholder';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
 
@@ -96,7 +97,7 @@ const ManageProductsScreen = ({ navigation }) => {
               {product.image_url ? (
                 <Image source={{uri: product.image_url}} style={{width: 60, height: 60, borderRadius: RADIUS.md}} />
               ) : (
-                <Ionicons name={product.emoji || 'cube-outline'} size={32} color={COLORS.primary} />
+                <ProductPlaceholder category={product.category} size={60} />
               )}
             </View>
             <View style={s.productInfo}>
