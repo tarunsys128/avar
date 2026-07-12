@@ -231,8 +231,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   const resetPassword = async (email) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'avardairycustomer://reset-password', // or whatever your deep link scheme is
+    // Sending email for password reset (OTP inside email usually)
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    return { data, error };
+  };
+
+  const verifyOtp = async (email, otp) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'recovery',
+    });
+    return { data, error };
+  };
+
+  const updatePassword = async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword,
     });
     return { data, error };
   };
@@ -257,6 +272,8 @@ export const AuthProvider = ({ children }) => {
     loginWithEmail,
     signupWithEmail,
     resetPassword,
+    verifyOtp,
+    updatePassword,
     logout: currentUser?.id === 'mock-123' ? mockLogout : logout,
     refreshProfile,
     mockLogin,

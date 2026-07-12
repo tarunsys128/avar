@@ -15,16 +15,18 @@ const appVariant = Constants.expoConfig?.extra?.variant || 'customer';
 const LoginScreen = () => {
   // For the management app, we show a role picker first
   const [selectedRole, setSelectedRole] = useState(appVariant === 'admin' ? null : 'customer'); // null = show picker
-  const [isLogin, setIsLogin]     = useState(true);
+  const [authMode, setAuthMode]   = useState('login'); // 'login', 'signup', 'forgot_password', 'verify_otp'
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [otp, setOtp]             = useState('');
   const [name, setName]           = useState('');
   const [phone, setPhone]         = useState('');
   const [showPwd, setShowPwd]     = useState(false);
   const [loading, setLoading]     = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const { loginWithEmail, signupWithEmail, resetPassword } = useAuth();
+  const { loginWithEmail, signupWithEmail, resetPassword, verifyOtp, updatePassword } = useAuth();
 
   const handleAuth = async () => {
     setErrorMessage('');
@@ -34,7 +36,7 @@ const LoginScreen = () => {
     }
     setLoading(true);
     try {
-      if (isLogin) {
+      if (authMode === 'login') {
         const { error } = await loginWithEmail(email, password);
         if (error) throw error;
       } else {
@@ -59,7 +61,7 @@ const LoginScreen = () => {
         
         // Profile creation and alerts are now handled by AuthContext.js via onAuthStateChange
         setLoading(false);
-        setIsLogin(true); // reset to login view for after approval
+        setAuthMode('login'); // reset to login view for after approval
         return;
       }
     } catch (e) {
@@ -79,7 +81,7 @@ const LoginScreen = () => {
     try {
       const { error } = await resetPassword(email);
       if (error) throw error;
-      Alert.alert('Reset Email Sent', `A password reset link has been sent to ${email}. Check your inbox.`);
+      setAuthMode('verify_otp');
     } catch (e) {
       setErrorMessage(e.message || 'Failed to send reset password email.');
     } finally {
@@ -102,7 +104,7 @@ const LoginScreen = () => {
 
           <TouchableOpacity 
             style={s.roleCard} 
-            onPress={() => { setSelectedRole('admin'); setIsLogin(true); }}
+            onPress={() => { setSelectedRole('admin'); setAuthMode('login'); }}
             activeOpacity={0.7}
           >
             <View style={[s.roleIconBox, { backgroundColor: '#EDE9FE' }]}>
@@ -117,7 +119,7 @@ const LoginScreen = () => {
 
           <TouchableOpacity 
             style={s.roleCard} 
-            onPress={() => { setSelectedRole('staff'); setIsLogin(true); }}
+            onPress={() => { setSelectedRole('staff'); setAuthMode('login'); }}
             activeOpacity={0.7}
           >
             <View style={[s.roleIconBox, { backgroundColor: '#D1FAE5' }]}>
@@ -156,7 +158,7 @@ const LoginScreen = () => {
           keyboardShouldPersistTaps="handled"
         >
           {/* Back button for management app */}
-          {isAdminApp && (
+          {isAdminApp && authMode !== 'verify_otp' && authMode !== 'forgot_password' && (
             <TouchableOpacity style={s.backToRoles} onPress={() => { setSelectedRole(null); setErrorMessage(''); }}>
               <Ionicons name="arrow-back" size={22} color={COLORS.textDark} />
               <Text style={s.backToRolesTxt}>Change Role</Text>
@@ -186,98 +188,159 @@ const LoginScreen = () => {
 
           {/* ─── Card ──────────────── */}
           <View style={s.card}>
-            {/* Tab switcher */}
-            {showSignupTab ? (
-              <View style={s.tabs}>
-                <TouchableOpacity
-                  style={[s.tab, isLogin && s.tabActive]}
-                  onPress={() => setIsLogin(true)}
-                >
-                  <Text style={[s.tabTxt, isLogin && s.tabTxtActive]}>Login</Text>
+            {authMode === 'forgot_password' || authMode === 'verify_otp' ? (
+              <View>
+                <TouchableOpacity style={s.backToLogin} onPress={() => setAuthMode('login')}>
+                  <Ionicons name="arrow-back" size={20} color={COLORS.textDark} />
+                  <Text style={s.backToLoginTxt}>Back to Login</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.tab, !isLogin && s.tabActive]}
-                  onPress={() => setIsLogin(false)}
-                >
-                  <Text style={[s.tabTxt, !isLogin && s.tabTxtActive]}>
-                    {isAdminApp ? 'Staff Sign Up' : 'Sign Up'}
-                  </Text>
-                </TouchableOpacity>
+                <Text style={s.sectionTitle}>Reset Password</Text>
+                
+                {authMode === 'forgot_password' ? (
+                  <>
+                    <Text style={s.sectionSub}>Enter your email address to receive a 6-digit reset code.</Text>
+                    <InputField
+                      iconName="mail-outline"
+                      placeholder="Email Address"
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                    {errorMessage ? <Text style={s.errorTxt}>{errorMessage}</Text> : null}
+                    <TouchableOpacity style={s.primaryBtn} onPress={handleResetPassword} disabled={loading}>
+                      {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryBtnTxt}>Send Reset Code</Text>}
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <Text style={s.sectionSub}>Check your email for the 6-digit code we just sent to {email}</Text>
+                    <InputField
+                      iconName="key-outline"
+                      placeholder="6-Digit Reset Code"
+                      value={otp}
+                      onChangeText={setOtp}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                    />
+                    <InputField
+                      iconName="lock-closed-outline"
+                      placeholder="New Password"
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      secureTextEntry={!showPwd}
+                      rightAction={
+                        <TouchableOpacity onPress={() => setShowPwd(p => !p)} style={s.eyeBtn}>
+                          <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textGray} />
+                        </TouchableOpacity>
+                      }
+                    />
+                    {errorMessage ? <Text style={s.errorTxt}>{errorMessage}</Text> : null}
+                    <TouchableOpacity style={s.primaryBtn} onPress={handleVerifyOtpAndReset} disabled={loading}>
+                      {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryBtnTxt}>Update Password</Text>}
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             ) : (
-              <View style={s.adminOnlyHeader}>
-                <Ionicons name="shield-checkmark" size={20} color="#7C3AED" />
-                <Text style={s.adminOnlyTxt}>Admin Login Only</Text>
-              </View>
-            )}
-
-            {/* Name & Phone (sign-up only) */}
-            {!isLogin && (
               <>
+                {/* Tab switcher */}
+                {showSignupTab ? (
+                  <View style={s.tabs}>
+                    <TouchableOpacity
+                      style={[s.tab, authMode === 'login' && s.tabActive]}
+                      onPress={() => setAuthMode('login')}
+                    >
+                      <Text style={[s.tabTxt, authMode === 'login' && s.tabTxtActive]}>Login</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.tab, authMode === 'signup' && s.tabActive]}
+                      onPress={() => setAuthMode('signup')}
+                    >
+                      <Text style={[s.tabTxt, authMode === 'signup' && s.tabTxtActive]}>
+                        {isAdminApp ? 'Staff Sign Up' : 'Sign Up'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={s.adminOnlyHeader}>
+                    <Ionicons name="shield-checkmark" size={20} color="#7C3AED" />
+                    <Text style={s.adminOnlyTxt}>Admin Login Only</Text>
+                  </View>
+                )}
+
+                {/* Name & Phone (sign-up only) */}
+                {authMode === 'signup' && (
+                  <>
+                    <InputField
+                      iconName="person-outline"
+                      placeholder="Full Name"
+                      value={name}
+                      onChangeText={setName}
+                    />
+                    <InputField
+                      iconName="call-outline"
+                      placeholder="Phone Number"
+                      value={phone}
+                      onChangeText={setPhone}
+                      keyboardType="phone-pad"
+                    />
+                  </>
+                )}
+
                 <InputField
-                  iconName="person-outline"
-                  placeholder="Full Name"
-                  value={name}
-                  onChangeText={setName}
+                  iconName="mail-outline"
+                  placeholder="Email Address"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
                 />
-                <InputField
-                  iconName="call-outline"
-                  placeholder="Phone Number"
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                />
+                
+                {authMode === 'login' || authMode === 'signup' ? (
+                  <InputField
+                    iconName="lock-closed-outline"
+                    placeholder="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPwd}
+                    rightAction={
+                      <TouchableOpacity onPress={() => setShowPwd(p => !p)} style={s.eyeBtn}>
+                        <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textGray} />
+                      </TouchableOpacity>
+                    }
+                  />
+                ) : null}
+
+                {authMode === 'login' && (
+                  <TouchableOpacity 
+                    style={{ alignSelf: 'flex-end', marginBottom: SPACING.sm }} 
+                    onPress={() => setAuthMode('forgot_password')}
+                  >
+                    <Text style={s.forgotTxt}>Forgot Password?</Text>
+                  </TouchableOpacity>
+                )}
+
+                {errorMessage ? (
+                  <Text style={s.errorTxt}>{errorMessage}</Text>
+                ) : null}
+
+                {/* Info banner for staff signup */}
+                {authMode === 'signup' && isAdminApp && (
+                  <View style={s.infoBanner}>
+                    <Ionicons name="time-outline" size={18} color="#B45309" />
+                    <Text style={s.infoBannerTxt}>After signup, your account needs Admin approval before you can login.</Text>
+                  </View>
+                )}
+
+                <TouchableOpacity style={s.primaryBtn} onPress={handleAuth} disabled={loading}>
+                  {loading
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={s.primaryBtnTxt}>{authMode === 'login' ? 'Sign In' : (isAdminApp ? 'Create Staff Account' : 'Create Account')}</Text>
+                  }
+                </TouchableOpacity>
               </>
             )}
-
-            <InputField
-              iconName="mail-outline"
-              placeholder="Email Address"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <InputField
-              iconName="lock-closed-outline"
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPwd}
-              rightAction={
-                <TouchableOpacity onPress={() => setShowPwd(p => !p)} style={s.eyeBtn}>
-                  <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textGray} />
-                </TouchableOpacity>
-              }
-            />
-
-            {isLogin && (
-              <TouchableOpacity 
-                style={{ alignSelf: 'flex-end', marginBottom: SPACING.sm }} 
-                onPress={handleResetPassword}
-              >
-                <Text style={s.forgotTxt}>Forgot Password?</Text>
-              </TouchableOpacity>
-            )}
-
-            {errorMessage ? (
-              <Text style={s.errorTxt}>{errorMessage}</Text>
-            ) : null}
-
-            {/* Info banner for staff signup */}
-            {!isLogin && isAdminApp && (
-              <View style={s.infoBanner}>
-                <Ionicons name="time-outline" size={18} color="#B45309" />
-                <Text style={s.infoBannerTxt}>After signup, your account needs Admin approval before you can login.</Text>
-              </View>
-            )}
-
-            <TouchableOpacity style={s.primaryBtn} onPress={handleAuth} disabled={loading}>
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={s.primaryBtnTxt}>{isLogin ? 'Sign In' : (isAdminApp ? 'Create Staff Account' : 'Create Account')}</Text>
-              }
-            </TouchableOpacity>
           </View>
 
         </ScrollView>
@@ -375,6 +438,11 @@ const s = StyleSheet.create({
     shadowColor: COLORS.primary,
   },
   primaryBtnTxt: { color: COLORS.white, fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold },
+
+  sectionTitle: { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark, marginBottom: 8, marginTop: SPACING.md },
+  sectionSub: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginBottom: SPACING.lg, lineHeight: 20 },
+  backToLogin: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  backToLoginTxt: { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.medium, color: COLORS.textDark, marginLeft: 4 },
 
   // ─── Role Picker (Management App) ────────────────────────────────────
   rolePickerContainer: { 
