@@ -89,6 +89,36 @@ const LoginScreen = () => {
     }
   };
 
+  const handleVerifyOtpAndReset = async () => {
+    setErrorMessage('');
+    if (!otp || !newPassword) {
+      setErrorMessage('Please enter the 6-digit code and your new password.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrorMessage('Password must be at least 6 characters.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: otpError } = await verifyOtp(email, otp);
+      if (otpError) throw otpError;
+
+      const { error: updateError } = await updatePassword(newPassword);
+      if (updateError) throw updateError;
+
+      Alert.alert('✅ Success', 'Password has been reset successfully. You can now login with your new password.');
+      setAuthMode('login');
+      setPassword('');
+      setNewPassword('');
+      setOtp('');
+    } catch (e) {
+      setErrorMessage(e.message || 'Failed to reset password. The code might be expired or invalid.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ─── Management App: Role Selector Screen ────────────────────────────
   if (appVariant === 'admin' && selectedRole === null) {
     return (
