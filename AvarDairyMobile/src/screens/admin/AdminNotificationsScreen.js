@@ -58,7 +58,7 @@ const AdminNotificationsScreen = ({ navigation }) => {
       const payloads = customers.map(c => ({
         user_id: c.id,
         title: title.trim(),
-        message: message.trim(),
+        body: message.trim(),
         type: 'ORDER_REMINDER',
         is_read: false
       }));
