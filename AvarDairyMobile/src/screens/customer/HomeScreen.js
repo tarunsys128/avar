@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Dimensions, RefreshControl, Animated
+  ActivityIndicator, Dimensions, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -278,10 +278,9 @@ const HomeScreen = ({ navigation }) => {
 
         {/* ── Product Cards ─────────────────────────────────────────── */}
         {loading ? (
-          <View style={styles.cardsGrid}>
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingTxt}>Loading products...</Text>
           </View>
         ) : products.length === 0 ? (
           <View style={styles.emptyWrap}>
@@ -341,25 +340,6 @@ const HomeScreen = ({ navigation }) => {
         </View>
       )}
     </SafeAreaView>
-  );
-};
-
-const SkeletonCard = () => {
-  const opacity = React.useRef(new Animated.Value(0.4)).current;
-  
-  React.useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 800, useNativeDriver: true })
-      ])
-    ).start();
-  }, []);
-
-  return (
-    <Animated.View style={[styles.paneerCard, { opacity, height: 160, padding: 0 }]} >
-       <View style={{ flex: 1, backgroundColor: '#E5E7EB' }} />
-    </Animated.View>
   );
 };
 
