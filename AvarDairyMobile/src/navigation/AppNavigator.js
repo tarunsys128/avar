@@ -67,13 +67,13 @@ const TabIcon = ({ name, label, focused }) => (
       size={24} 
       color={focused ? COLORS.primary : COLORS.textGray} 
     />
-    <Text style={[ti.label, focused && ti.labelActive]}>{label}</Text>
+    <Text numberOfLines={1} adjustsFontSizeToFit style={[ti.label, focused && ti.labelActive]}>{label}</Text>
   </View>
 );
 
 const ti = StyleSheet.create({
   wrap:        { alignItems: 'center', paddingTop: 4 },
-  label:       { fontSize: 10, color: COLORS.textGray, marginTop: 4, fontWeight: '500' },
+  label:       { fontSize: 10, color: COLORS.textGray, marginTop: 4, fontWeight: '500', width: 60, textAlign: 'center' },
   labelActive: { color: COLORS.primary, fontWeight: '700' },
 });
 
@@ -167,13 +167,16 @@ const ProfileTabStack = () => (
 const professionalTabBarStyle = {
   height: 65,
   backgroundColor: COLORS.white,
-  paddingBottom: 8,
+  paddingBottom: 10,
   paddingTop: 8,
-  borderTopWidth: 1,
-  borderTopColor: COLORS.border,
+  marginBottom: 10,
+  marginHorizontal: 15,
+  borderRadius: 20,
+  position: 'absolute',
+  borderTopWidth: 0,
   elevation: 8,
   shadowColor: '#000',
-  shadowOpacity: 0.05,
+  shadowOpacity: 0.1,
   shadowRadius: 10,
   shadowOffset: { width: 0, height: -3 },
 };
@@ -195,7 +198,7 @@ const CustomerTabs = () => (
     <Tab.Screen
       name="CategoriesTab"
       component={CatTabStack}
-      options={{ tabBarIcon: ({ focused }) => <TabIcon name="grid" label="Categories" focused={focused} /> }}
+      options={{ tabBarIcon: ({ focused }) => <TabIcon name="grid" label="Products" focused={focused} /> }}
     />
     <Tab.Screen
       name="CartTab"
