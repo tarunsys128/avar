@@ -41,10 +41,10 @@ const AdminNotificationsScreen = ({ navigation }) => {
   const dispatchToAll = async () => {
     setLoading(true);
     try {
-      // 1. Fetch all customer IDs
+      // 1. Fetch all customer IDs and push tokens
       const { data: customers, error: cError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, push_token')
         .eq('role', 'customer');
 
       if (cError) throw cError;
@@ -67,6 +67,33 @@ const AdminNotificationsScreen = ({ navigation }) => {
       const { error: insError } = await supabase.from('notifications').insert(payloads);
       
       if (insError) throw insError;
+
+      // 4. Send Remote Push Notifications via Expo Push API
+      const expoPushMessages = customers
+        .filter(c => c.push_token && (c.push_token.startsWith('ExponentPushToken') || c.push_token.startsWith('ExpoPushToken')))
+        .map(c => ({
+          to: c.push_token,
+          title: title.trim(),
+          body: message.trim(),
+          sound: 'default',
+          data: { type: 'ORDER_REMINDER' },
+        }));
+
+      if (expoPushMessages.length > 0) {
+        try {
+          await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Accept-encoding': 'gzip, deflate',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(expoPushMessages),
+          });
+        } catch (pushErr) {
+          console.error('Push API Error:', pushErr);
+        }
+      }
 
       Alert.alert('Success', 'Push notifications dispatched successfully!');
       setTitle('');

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import * as Haptics from 'expo-haptics';
 
 const CartContext = createContext();
 const CARTON_KG = 5; // 1 carton = 5 kg
@@ -10,6 +11,7 @@ export const CartProvider = ({ children }) => {
 
   // Add a product (qty = 1 carton by default)
   const addToCart = (product, cartons = 1) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(()=>{});
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
       if (existing) {
@@ -21,13 +23,20 @@ export const CartProvider = ({ children }) => {
 
   // Set exact carton quantity
   const updateQuantity = (id, qty) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(()=>{});
     if (qty <= 0) { removeFromCart(id); return; }
     setCart(prev => prev.map(i => i.id === id ? { ...i, qty } : i));
   };
 
-  const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
+  const removeFromCart = (id) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(()=>{});
+    setCart(prev => prev.filter(i => i.id !== id));
+  };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(()=>{});
+    setCart([]);
+  };
 
   // Total price
   const getCartTotal = () =>
