@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -170,13 +171,12 @@ const professionalTabBarStyle = {
   paddingBottom: 10,
   paddingTop: 8,
   paddingHorizontal: 15,
-  borderTopWidth: 1,
-  borderTopColor: COLORS.border,
+  borderTopWidth: 0,
   elevation: 8,
   shadowColor: '#000',
-  shadowOpacity: 0.1,
-  shadowRadius: 10,
-  shadowOffset: { width: 0, height: -3 },
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: -2 },
 };
 
 // ─── Customer Bottom Tabs ─────────────────────────────────────────────────────
@@ -277,6 +277,14 @@ export const AppNavigator = () => {
   const { currentUser, userRole, loading } = useAuth();
   const appVariant = Constants.expoConfig?.extra?.variant || 'customer';
   const [introFinished, setIntroFinished] = useState(false);
+
+  // Set Android system navigation bar to white
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync('#FFFFFF');
+      NavigationBar.setButtonStyleAsync('dark');
+    }
+  }, []);
 
   // Show intro video immediately, and hold it if app is still loading config/auth
   if (!introFinished || loading) {
