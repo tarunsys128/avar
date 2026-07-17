@@ -279,8 +279,7 @@ const HomeScreen = ({ navigation }) => {
         {/* ── Product Cards ─────────────────────────────────────────── */}
         {loading ? (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingTxt}>Loading products...</Text>
+            <Image source={require('../../assets/intro.gif')} style={{ width: 100, height: 100, resizeMode: 'contain' }} />
           </View>
         ) : products.length === 0 ? (
           <View style={styles.emptyWrap}>
