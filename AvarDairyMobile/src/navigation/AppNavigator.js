@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-import * as NavigationBar from 'expo-navigation-bar';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -277,14 +276,6 @@ export const AppNavigator = () => {
   const { currentUser, userRole, loading } = useAuth();
   const appVariant = Constants.expoConfig?.extra?.variant || 'customer';
   const [introFinished, setIntroFinished] = useState(false);
-
-  // Set Android system navigation bar to white
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      NavigationBar.setBackgroundColorAsync('#FFFFFF');
-      NavigationBar.setButtonStyleAsync('dark');
-    }
-  }, []);
 
   // Show intro video immediately, and hold it if app is still loading config/auth
   if (!introFinished || loading) {
