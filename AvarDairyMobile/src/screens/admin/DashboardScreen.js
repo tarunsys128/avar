@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabase';
-import { sendLocalNotification } from '../../services/notificationService';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 
 const AdminDashboardScreen = ({ navigation }) => {
@@ -18,7 +17,6 @@ const AdminDashboardScreen = ({ navigation }) => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const knownOrderIds = React.useRef(new Set());
 
   const fetchDashboardData = async () => {
     try {
@@ -38,16 +36,6 @@ const AdminDashboardScreen = ({ navigation }) => {
           if (o.status !== 'Cancelled') revenue += (o.total_amount || 0);
           if (o.status === 'Pending') {
              pending++;
-             if (!knownOrderIds.current.has(o.id)) {
-               if (knownOrderIds.current.size > 0) {
-                 sendLocalNotification({
-                   title: '🛒 New Order Received!',
-                   body: `A new order of \u20b9${o.total_amount} was placed.`,
-                   data: { orderId: o.id },
-                 });
-               }
-               knownOrderIds.current.add(o.id);
-             }
           }
         });
       }

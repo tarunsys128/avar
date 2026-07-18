@@ -287,8 +287,14 @@ export const AppNavigator = () => {
   // Smart Role-Based Navigation
   // The 'admin' variant app hosts both Admin and Staff UIs
   if (appVariant === 'admin') {
-    if (userRole === 'admin') return <AdminRootStack />;
-    if (userRole === 'staff') return <StaffRootStack />;
+    if (userRole === 'admin') return (<>
+      <GlobalNotificationHandler />
+      <AdminRootStack />
+    </>);
+    if (userRole === 'staff') return (<>
+      <GlobalNotificationHandler />
+      <StaffRootStack />
+    </>);
     return <AuthStack />; // fallback
   }
 
