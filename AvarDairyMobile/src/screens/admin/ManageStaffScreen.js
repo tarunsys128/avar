@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 import { supabase } from '../../supabase';
@@ -9,6 +9,7 @@ const ManageStaffScreen = ({ navigation }) => {
   const [staffList, setStaffList] = useState([]);
   const [pendingList, setPendingList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Add/Edit Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -70,7 +71,13 @@ const ManageStaffScreen = ({ navigation }) => {
       Alert.alert('Error', 'Failed to fetch staff data.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchStaffData();
   };
 
   useEffect(() => {
@@ -207,7 +214,11 @@ const ManageStaffScreen = ({ navigation }) => {
            <ActivityIndicator size="large" color={COLORS.primary} />
          </View>
       ) : (
-        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={s.scroll} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+        >
           
           {/* ─── Pending Approvals Section ─── */}
           {pendingList.length > 0 && (

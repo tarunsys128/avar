@@ -127,11 +127,14 @@ const AdminDashboardScreen = ({ navigation }) => {
       >
         
         {/* Header */}
-        <View style={s.header}>
-          <View>
-            <Text style={s.greeting}>Hello, {name} 👋</Text>
-            <Text style={s.subtitle}>Here is your system overview.</Text>
+        <View style={[s.header, { justifyContent: 'space-between', paddingHorizontal: 0, marginBottom: SPACING.xl }]}>
+          <View style={s.headerLeft}>
+            <Text style={s.greeting}>Hello, {name} 👑</Text>
+            <Text style={s.subGreeting}>Here's what's happening today</Text>
           </View>
+          <TouchableOpacity style={s.bellBtn} onPress={() => navigation.navigate('Notifications')}>
+            <Ionicons name="notifications-outline" size={24} color={COLORS.textDark} />
+          </TouchableOpacity>
         </View>
 
         {/* Stats Grid */}
@@ -205,9 +208,14 @@ const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: COLORS.bgLight },
   scroll: { padding: SPACING.lg },
 
-  header: { marginBottom: SPACING.xl },
-  greeting: { fontSize: FONTS.sizes.xl, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
-  subtitle: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 4 },
+  header: { 
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.lg,
+    flexDirection: 'row', alignItems: 'center'
+  },
+  headerLeft: { flex: 1 },
+  greeting: { fontSize: FONTS.sizes.xl, fontWeight: '800', color: COLORS.textDark },
+  subGreeting: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 4 },
+  bellBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.bgLight, justifyContent: 'center', alignItems: 'center' },
 
   sectionTitle: { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark, marginBottom: SPACING.md },
 

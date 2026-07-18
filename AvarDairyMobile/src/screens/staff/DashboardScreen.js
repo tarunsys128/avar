@@ -171,12 +171,17 @@ const StaffDashboardScreen = () => {
             <Text style={s.subtitle}>{isDutyOn ? 'On Duty' : 'Off Duty'}</Text>
           </View>
         </View>
-        <Switch
-          value={isDutyOn}
-          onValueChange={toggleDuty}
-          trackColor={{ false: COLORS.border, true: COLORS.green + '80' }}
-          thumbColor={isDutyOn ? COLORS.green : COLORS.textGray}
-        />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity style={s.bellBtn} onPress={() => navigation.navigate('Notifications')}>
+            <Ionicons name="notifications-outline" size={24} color={COLORS.textDark} />
+          </TouchableOpacity>
+          <Switch
+            value={isDutyOn}
+            onValueChange={toggleDuty}
+            trackColor={{ false: COLORS.border, true: COLORS.green + '80' }}
+            thumbColor={isDutyOn ? COLORS.green : COLORS.textGray}
+          />
+        </View>
       </View>
 
       <View style={s.statsBar}>

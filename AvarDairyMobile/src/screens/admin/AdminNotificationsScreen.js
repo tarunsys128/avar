@@ -19,7 +19,7 @@ const AdminNotificationsScreen = ({ navigation }) => {
     const { count, error } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
-      .eq('role', 'customer');
+      .in('role', ['customer', 'staff']);
     if (!error) setUserCount(count || 0);
   };
 
@@ -30,7 +30,7 @@ const AdminNotificationsScreen = ({ navigation }) => {
     }
     Alert.alert(
       'Confirm Dispatch',
-      `Are you sure you want to send this notification to ${userCount} customer(s)?`,
+      `Are you sure you want to send this notification to ${userCount} users (Customers & Staff)?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Send Now', onPress: dispatchToAll }
@@ -41,15 +41,15 @@ const AdminNotificationsScreen = ({ navigation }) => {
   const dispatchToAll = async () => {
     setLoading(true);
     try {
-      // 1. Fetch all customer IDs and push tokens
+      // 1. Fetch all customer & staff IDs and push tokens
       const { data: customers, error: cError } = await supabase
         .from('profiles')
         .select('id, push_token')
-        .eq('role', 'customer');
+        .in('role', ['customer', 'staff']);
 
       if (cError) throw cError;
       if (!customers || customers.length === 0) {
-        Alert.alert('No Customers Found', 'There are no customers to send notifications to.');
+        Alert.alert('No Users Found', 'There are no customers or staff to send notifications to.');
         setLoading(false);
         return;
       }

@@ -231,6 +231,7 @@ const StaffTabs = () => (
 const StaffRootStack = () => (
   <StaffSt.Navigator screenOptions={noHeader}>
     <StaffSt.Screen name="StaffTabsMain" component={StaffTabs} />
+    <StaffSt.Screen name="Notifications" component={CustomerNotificationsScreen} />
     <StaffSt.Screen name="GenericSettings" component={GenericSettingsScreen} />
     <StaffSt.Screen name="Reminders" component={ReminderSettingsScreen} />
   </StaffSt.Navigator>
@@ -254,6 +255,7 @@ const AdminTabs = () => (
 const AdminRootStack = () => (
   <AdminSt.Navigator screenOptions={noHeader}>
     <AdminSt.Screen name="AdminTabsMain" component={AdminTabs} />
+    <AdminSt.Screen name="Notifications" component={CustomerNotificationsScreen} />
     <AdminSt.Screen name="AdminCustomers" component={AdminCustomersScreen} />
     <AdminSt.Screen name="AdminProductForm" component={AdminProductFormScreen} />
     <AdminSt.Screen name="AdminSettings" component={AdminSettingsScreen} />
