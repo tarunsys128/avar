@@ -92,7 +92,7 @@ const LoginScreen = () => {
   const handleVerifyOtpAndReset = async () => {
     setErrorMessage('');
     if (!otp || !newPassword) {
-      setErrorMessage('Please enter the 6-digit code and your new password.');
+      setErrorMessage('Please enter the reset code and your new password.');
       return;
     }
     if (newPassword.length < 6) {
@@ -228,7 +228,7 @@ const LoginScreen = () => {
                 
                 {authMode === 'forgot_password' ? (
                   <>
-                    <Text style={s.sectionSub}>Enter your email address to receive a 6-digit reset code.</Text>
+                    <Text style={s.sectionSub}>Enter your email address to receive a reset code.</Text>
                     <InputField
                       iconName="mail-outline"
                       placeholder="Email Address"
@@ -244,14 +244,14 @@ const LoginScreen = () => {
                   </>
                 ) : (
                   <>
-                    <Text style={s.sectionSub}>Check your email for the 6-digit code we just sent to {email}</Text>
+                    <Text style={s.sectionSub}>Check your email for the reset code we just sent to {email}</Text>
                     <InputField
                       iconName="key-outline"
-                      placeholder="6-Digit Reset Code"
+                      placeholder="Reset Code (from email)"
                       value={otp}
                       onChangeText={setOtp}
                       keyboardType="number-pad"
-                      maxLength={6}
+                      maxLength={8}
                     />
                     <InputField
                       iconName="lock-closed-outline"
