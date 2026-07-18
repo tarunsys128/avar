@@ -173,7 +173,7 @@ const ManageStaffScreen = ({ navigation }) => {
           if (user.role === 'staff' || user.role === 'admin') {
              Alert.alert("Info", `This user is already a ${user.role}.`);
           } else {
-             const { error: updateErr } = await supabase.from('profiles').update({ role: 'staff' }).eq('id', user.id);
+             const { error: updateErr } = await supabase.from('profiles').update({ role: 'staff', is_approved: true }).eq('id', user.id);
              if (updateErr) throw updateErr;
              Alert.alert("Success", "Customer promoted to Staff!");
              fetchStaffData();
