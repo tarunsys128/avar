@@ -5,9 +5,14 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
+import * as SplashScreen from 'expo-splash-screen';
+
 import { AuthProvider } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+
+// Keep native splash screen visible until custom SplashVideoScreen handles the GIF load
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Configure how notifications are handled when the app is foregrounded
 Notifications.setNotificationHandler({

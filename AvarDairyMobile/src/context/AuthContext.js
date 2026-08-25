@@ -131,6 +131,8 @@ export const AuthProvider = ({ children }) => {
       phone: user.user_metadata?.phone || '',
       role: metadataRole,
       is_approved: isStaff ? false : null,
+      business_name: user.user_metadata?.business_name || '',
+      address: user.user_metadata?.address || '',
       created_at: new Date().toISOString()
     };
     
@@ -141,6 +143,14 @@ export const AuthProvider = ({ children }) => {
       .single();
       
     if (!createErr && created) {
+      if (user.user_metadata?.address && metadataRole === 'customer') {
+        const { error: addrErr } = await supabase.from('addresses').insert({
+          user_id: user.id,
+          address: user.user_metadata.address,
+          is_default: true
+        });
+        if (addrErr) console.log("Failed to insert address on signup:", addrErr.message);
+      }
       return created;
     }
     return newProfile;
@@ -210,10 +220,15 @@ export const AuthProvider = ({ children }) => {
     return { data, error: null };
   };
 
-  const signupWithEmail = async (email, password, name, phone) => {
+  const signupWithEmail = async (email, password, name, phone, businessName, address) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          name, phone, business_name: businessName, address, role: 'customer'
+        }
+      }
     });
     
     if (error) throw error;
@@ -223,8 +238,17 @@ export const AuthProvider = ({ children }) => {
         id: data.user.id,
         name: name || '',
         phone: phone || '',
+        business_name: businessName || '',
+        address: address || '',
         role: 'customer'
       });
+      if (address) {
+        await supabase.from('addresses').insert({
+          user_id: data.user.id,
+          address: address,
+          is_default: true
+        });
+      }
     }
     
     return data;

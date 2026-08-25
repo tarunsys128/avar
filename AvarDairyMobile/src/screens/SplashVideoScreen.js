@@ -4,8 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 
 const { width, height } = Dimensions.get('screen');
 
-// Prevent the native splash screen from auto-hiding — we control it here
-SplashScreen.preventAutoHideAsync().catch(() => {});
+
 
 const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;

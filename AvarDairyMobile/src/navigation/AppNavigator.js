@@ -191,26 +191,44 @@ const CustomerTabs = () => (
       name="HomeTab"
       component={HomeTabStack}
       options={{ tabBarIcon: ({ focused }) => <TabIcon name="home" label="Home" focused={focused} /> }}
+      listeners={({ navigation }) => ({
+        tabPress: (e) => { e.preventDefault(); navigation.navigate('HomeTab', { screen: 'HomeMain' }); },
+      })}
     />
     <Tab.Screen
       name="CategoriesTab"
       component={CatTabStack}
       options={{ tabBarIcon: ({ focused }) => <TabIcon name="grid" label="Products" focused={focused} /> }}
+      listeners={({ navigation }) => ({
+        tabPress: (e) => { e.preventDefault(); navigation.navigate('CategoriesTab', { screen: 'CategoriesMain' }); },
+      })}
     />
     <Tab.Screen
       name="CartTab"
       component={CartTabStack}
       options={{ tabBarIcon: ({ focused }) => <CartTabIcon focused={focused} /> }}
+      listeners={({ navigation }) => ({
+        tabPress: (e) => { e.preventDefault(); navigation.navigate('CartTab', { screen: 'CartMain' }); },
+      })}
     />
     <Tab.Screen
       name="OrdersTab"
       component={OrdersTabStack}
       options={{ tabBarIcon: ({ focused }) => <TabIcon name="receipt" label="Orders" focused={focused} /> }}
+      listeners={({ navigation }) => ({
+        tabPress: (e) => { e.preventDefault(); navigation.navigate('OrdersTab', { screen: 'OrdersMain' }); },
+      })}
     />
     <Tab.Screen
       name="ProfileTab"
       component={ProfileTabStack}
       options={{ tabBarIcon: ({ focused }) => <TabIcon name="person" label="Profile" focused={focused} /> }}
+      listeners={({ navigation }) => ({
+        tabPress: (e) => {
+          e.preventDefault();
+          navigation.navigate('ProfileTab', { screen: 'ProfileMain' });
+        },
+      })}
     />
   </Tab.Navigator>
 );

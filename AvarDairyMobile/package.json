@@ -8,7 +8,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "update:customer": "npx cross-env APP_VARIANT=customer eas update --branch customer --message \"Customer Update\" --non-interactive",
+    "update:admin": "npx cross-env APP_VARIANT=admin eas update --branch admin --message \"Admin Update\" --non-interactive"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

@@ -22,6 +22,8 @@ const LoginScreen = () => {
   const [otp, setOtp]             = useState('');
   const [name, setName]           = useState('');
   const [phone, setPhone]         = useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [address, setAddress]     = useState('');
   const [showPwd, setShowPwd]     = useState(false);
   const [loading, setLoading]     = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -45,6 +47,13 @@ const LoginScreen = () => {
         
         // 1. Create auth account with proper role
         const role = isAdminApp ? 'staff' : 'customer';
+        
+        // For customer signup validate extra fields
+        if (!isAdminApp) {
+          if (!businessName) { setErrorMessage('Please enter your business name.'); setLoading(false); return; }
+          if (!address) { setErrorMessage('Please enter your business address.'); setLoading(false); return; }
+        }
+
         const { data, error } = await supabase.auth.signUp({ 
           email, 
           password,
@@ -52,7 +61,9 @@ const LoginScreen = () => {
             data: {
               name: name,
               phone: phone || '',
-              role: role
+              role: role,
+              business_name: businessName || '',
+              address: address || ''
             }
           }
         });
@@ -315,6 +326,22 @@ const LoginScreen = () => {
                       onChangeText={setPhone}
                       keyboardType="phone-pad"
                     />
+                    {!isAdminApp && (
+                      <>
+                        <InputField
+                          iconName="business-outline"
+                          placeholder="Business Name"
+                          value={businessName}
+                          onChangeText={setBusinessName}
+                        />
+                        <InputField
+                          iconName="location-outline"
+                          placeholder="Complete Address"
+                          value={address}
+                          onChangeText={setAddress}
+                        />
+                      </>
+                    )}
                   </>
                 )}
 

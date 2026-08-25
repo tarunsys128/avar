@@ -114,9 +114,11 @@ const ReminderSettingsScreen = ({ navigation }) => {
     
     // Cross-platform daily trigger
     const trigger = {
+      type: 'daily',
       hour: date.getHours(),
       minute: date.getMinutes(),
       repeats: true,
+      channelId: 'default',
     };
 
     await Notifications.scheduleNotificationAsync({

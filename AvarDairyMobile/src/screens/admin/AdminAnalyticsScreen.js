@@ -32,6 +32,16 @@ const AdminAnalyticsScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchReport();
+
+    // Subscribe to orders changes for real-time analytics updates
+    const ordersChannel = supabase
+      .channel(`analytics-orders-${Date.now()}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchReport)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+    };
   }, [range, customDates]);
 
   const fetchReport = async () => {
@@ -76,7 +86,7 @@ const AdminAnalyticsScreen = ({ navigation }) => {
           created_at, 
           customer_id,
           staff_id,
-          profiles!customer_id (name, email),
+          profiles!customer_id (name, email, phone),
           staff:profiles!staff_id (name)
         `)
         .gte('created_at', startDate.toISOString())
@@ -92,7 +102,7 @@ const AdminAnalyticsScreen = ({ navigation }) => {
       if (orderIds.length > 0) {
         const { data: itemsData, error: itemErr } = await supabase
           .from('order_items')
-          .select('product_id, blocks, total_price, products(name, emoji)')
+          .select('order_id, product_id, blocks, total_price, products(name, emoji)')
           .in('order_id', orderIds);
         
         if (itemErr) throw itemErr;
@@ -113,11 +123,14 @@ const AdminAnalyticsScreen = ({ navigation }) => {
         if (o.staff?.name && o.status === 'Delivered') {
           staffMap[o.staff.name] = (staffMap[o.staff.name] || 0) + 1;
         }
+
+        // Attach items to the order object for exporting later
+        o.items = items?.filter(i => i.order_id === o.id) || [];
       });
 
       items?.forEach(i => {
         const name = i.products?.name || 'Unknown';
-        if (!prodMap[name]) prodMap[name] = { count: 0, emoji: i.products?.emoji || '📦' };
+        if (!prodMap[name]) prodMap[name] = { count: 0, emoji: i.products?.emoji || 'cube-outline' };
         prodMap[name].count += (i.blocks || 0);
       });
 
@@ -158,14 +171,23 @@ const AdminAnalyticsScreen = ({ navigation }) => {
     }
 
     try {
-      const exportData = reportData.rawOrders.map(o => ({
-        OrderID: o.id,
-        Date: new Date(o.created_at).toLocaleDateString(),
-        Customer: o.profiles?.name || 'Unknown',
-        Amount: o.total_amount,
-        Status: o.status,
-        Staff: o.staff?.name || 'Unassigned'
-      }));
+      const exportData = reportData.rawOrders.map(o => {
+        const itemsStr = (o.items && o.items.length > 0) 
+          ? o.items.map(i => `${i.products?.name || 'Item'} (${i.blocks})`).join(', ')
+          : 'No items';
+
+        return {
+          'Order ID': o.id.slice(-6).toUpperCase(),
+          'Date': new Date(o.created_at).toLocaleDateString(),
+          'Time': new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          'Customer': o.profiles?.name || 'Unknown',
+          'Customer Contact': o.profiles?.phone || '-',
+          'Items Ordered': itemsStr,
+          'Order Amount': `Rs ${o.total_amount || 0}`,
+          'Status': o.status,
+          'Staff (Delivery)': o.staff?.name || 'Unassigned'
+        };
+      });
 
       await exportToExcel(exportData, `Avar_Report_${range}`);
     } catch (err) {
@@ -254,10 +276,10 @@ const AdminAnalyticsScreen = ({ navigation }) => {
             </View>
 
             {/* Performance Breakdown */}
-            <Text style={s.sectionTitle}>Order Status Breakdown</Text>
+            <Text style={s.sectionTitle}>Order Status Breakdown (Today)</Text>
             <View style={s.card}>
                <StatusRow label="Delivered" count={reportData.deliveredCount} total={reportData.orderCount} color={COLORS.green} />
-               <StatusRow label="Pending / Preparing" count={reportData.pendingCount} total={reportData.orderCount} color={COLORS.yellow} />
+               <StatusRow label="Active (Pending/Accepted)" count={reportData.pendingCount} total={reportData.orderCount} color={COLORS.yellow} />
                <StatusRow label="Cancelled" count={reportData.cancelledCount} total={reportData.orderCount} color={COLORS.danger} />
             </View>
 
@@ -266,7 +288,7 @@ const AdminAnalyticsScreen = ({ navigation }) => {
             <View style={s.card}>
               {reportData.topProducts.map((p, i) => (
                 <View key={i} style={[s.listItem, i < reportData.topProducts.length - 1 && s.divider]}>
-                  <Text style={s.listEmoji}>{p.emoji}</Text>
+                  <Ionicons name={p.emoji} size={28} color={COLORS.primary} style={s.listEmoji} />
                   <Text style={s.listName}>{p.name}</Text>
                   <Text style={s.listVal}>{p.count} units</Text>
                 </View>
@@ -360,7 +382,7 @@ const s = StyleSheet.create({
 
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   divider: { borderBottomWidth: 1, borderBottomColor: COLORS.bgLight },
-  listEmoji: { fontSize: 24, marginRight: 12 },
+  listEmoji: { marginRight: 12 },
   listName: { flex: 1, fontSize: 14, fontWeight: '600', color: COLORS.textDark },
   listVal: { fontSize: 14, fontWeight: '800', color: COLORS.green },
   emptyTxt: { textAlign: 'center', color: COLORS.textGray, fontSize: 12, paddingVertical: 10 },

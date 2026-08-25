@@ -31,7 +31,7 @@ const AdminOrdersScreen = ({ navigation }) => {
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select(`*, profiles:customer_id (name, phone, email, avatar_url)`)
+      .select(`*, profiles:customer_id (name, phone, email, avatar_url), order_items(*, products(name))`)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -39,7 +39,7 @@ const AdminOrdersScreen = ({ navigation }) => {
         if (order.status === 'Pending' && !knownOrderIds.current.has(order.id)) {
           if (knownOrderIds.current.size > 0) {
             sendLocalNotification({
-              title: '🛒 New Order Received!',
+              title: 'New Order Received!',
               body: `${order.profiles?.name || 'Customer'} placed an order of ₹${order.total_amount}`,
               data: { orderId: order.id },
             });
@@ -141,9 +141,9 @@ const AdminOrdersScreen = ({ navigation }) => {
     setNotifying(prev => ({ ...prev, [orderId]: false }));
 
     if (result.sent > 0) {
-      Alert.alert('✅ Staff Notified', `Push notification sent to ${result.sent} staff member${result.sent > 1 ? 's' : ''} on duty.`);
+      Alert.alert('Staff Notified', `Push notification sent to ${result.sent} staff member${result.sent > 1 ? 's' : ''} on duty.`);
     } else {
-      Alert.alert('⚠️ No Staff Available', 'No staff members are currently on duty or have push notifications enabled.');
+      Alert.alert('No Staff Available', 'No staff members are currently on duty or have push notifications enabled.');
     }
   };
 
@@ -195,7 +195,7 @@ const AdminOrdersScreen = ({ navigation }) => {
       >
         {filteredOrders.length === 0 && (
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>📋</Text>
+            <Ionicons name="clipboard-outline" size={64} color={COLORS.textGray} style={{ marginBottom: SPACING.md }} />
             <Text style={s.emptyTitle}>No Orders Found</Text>
             <Text style={s.emptyTxt}>
               There are no {activeTab === 'All' ? '' : activeTab.toLowerCase() + ' '}orders at the moment.
@@ -222,6 +222,24 @@ const AdminOrdersScreen = ({ navigation }) => {
               </View>
 
               <View style={s.divider} />
+
+              {/* Order Items UI */}
+              {order.order_items && order.order_items.length > 0 ? (
+                <View style={s.itemsSection}>
+                  <Text style={s.sectionHeaderSmall}>Items Ordered</Text>
+                  {order.order_items.map(item => {
+                    const boxSize = (item.weight_kg && item.blocks) ? (item.weight_kg / item.blocks) : 5;
+                    const productName = item.products?.name || 'Product';
+                    return (
+                      <View key={item.id} style={s.itemRow}>
+                        <Text style={s.itemDot}>•</Text>
+                        <Text style={s.itemNameText}>{productName} ({boxSize}kg Box)</Text>
+                        <Text style={s.itemQtyText}>x {item.blocks}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
 
               <View style={s.customerSection}>
                 <View style={s.customerRow}>
@@ -261,7 +279,7 @@ const AdminOrdersScreen = ({ navigation }) => {
                       onPress={() => updateOrderStatus(order, nextStatus)}
                     >
                       <Text style={s.actionBtnTxt}>
-                        {nextStatus === 'Accepted' ? '✅ Accept' : '🏠 Deliver'}
+                        {nextStatus === 'Accepted' ? 'Accept Order' : 'Mark Delivered'}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -317,11 +335,10 @@ const s = StyleSheet.create({
   scroll: { padding: SPACING.lg, paddingBottom: 100 },
 
   empty:      { alignItems: 'center', marginTop: 60, paddingHorizontal: SPACING.xl },
-  emptyEmoji: { fontSize: 48, marginBottom: SPACING.md },
   emptyTitle: { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark, marginBottom: 4 },
   emptyTxt:   { color: COLORS.textGray, textAlign: 'center', fontSize: FONTS.sizes.base },
 
-  orderCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.sm },
+  orderCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.md, borderWidth: 1, borderColor: COLORS.border },
 
   orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   orderIdCol:  { flex: 1 },
@@ -333,6 +350,13 @@ const s = StyleSheet.create({
   statusTxt:   { fontSize: FONTS.sizes.xs, fontWeight: FONTS.weights.bold },
 
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: SPACING.md },
+
+  itemsSection: { backgroundColor: '#F8FAFC', padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.border },
+  sectionHeaderSmall: { fontSize: 11, fontWeight: 'bold', color: COLORS.textMed, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  itemRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 },
+  itemDot: { color: COLORS.primary, fontSize: 16, lineHeight: 18, marginRight: 6 },
+  itemNameText: { flex: 1, fontSize: FONTS.sizes.sm, color: COLORS.textDark, fontWeight: '600' },
+  itemQtyText: { fontSize: FONTS.sizes.sm, color: COLORS.primary, fontWeight: 'bold', marginLeft: 8 },
 
   customerSection: { backgroundColor: '#FAFAFA', padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md },
   customerRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },

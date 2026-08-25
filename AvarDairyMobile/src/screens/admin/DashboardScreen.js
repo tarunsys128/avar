@@ -50,9 +50,13 @@ const AdminDashboardScreen = ({ navigation }) => {
       // 3. Fetch Recent Activity
       const { data: recentData, error: recentError } = await supabase
         .from('orders')
-        .select('*, profiles:customer_id(name)')
+        .select(`
+          *, 
+          profiles:customer_id(name),
+          staff:profiles!staff_id(name)
+        `)
         .order('updated_at', { ascending: false })
-        .limit(5);
+        .limit(8);
 
       if (!ordersError && !staffError && !recentError) {
         setStats({
@@ -62,15 +66,47 @@ const AdminDashboardScreen = ({ navigation }) => {
           activeStaff: staffCount || 0
         });
         
+        // 3a. Since we want staff metadata in recent activity, let's fetch staff names 
+        // if they are linked, otherwise "Unknown Staff"
         const formattedActivity = (recentData || []).map(order => {
           let title = '';
-          let icon = '📦';
-          if (order.status === 'Pending') { title = `New Order #${order.id.slice(-4).toUpperCase()} from ${order.profiles?.name || 'Customer'}`; icon = '📦'; }
-          else if (order.status === 'Delivered') { title = `Order #${order.id.slice(-4).toUpperCase()} Delivered`; icon = '✅'; }
-          else if (order.status === 'Cancelled') { title = `Order #${order.id.slice(-4).toUpperCase()} Cancelled`; icon = '❌'; }
-          else { title = `Order #${order.id.slice(-4).toUpperCase()} is ${order.status}`; icon = '🛵'; }
+          let icon = 'cube-outline';
+          let iconColor = COLORS.textGray;
           
-          return { id: order.id, icon, title, time: new Date(order.updated_at || order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+          // Try to fetch STAFF name directly via join
+          const cName = order.profiles?.name || 'Customer';
+          const sName = order.staff?.name || 'Staff';
+          
+          if (order.status === 'Pending') { 
+            title = `New Order #${order.id.slice(-6).toUpperCase()} from ${cName}`; 
+            icon = 'time-outline';
+            iconColor = COLORS.orange;
+          }
+          else if (order.status === 'Accepted' || order.status === 'Preparing' || order.status === 'Ready') { 
+            title = `${sName} ${order.status} Order #${order.id.slice(-6).toUpperCase()}`; 
+            icon = 'bicycle-outline';
+            iconColor = COLORS.primary;
+          }
+          else if (order.status === 'Delivered') { 
+            title = `${sName} Delivered #${order.id.slice(-6).toUpperCase()}`; 
+            icon = 'checkmark-circle-outline';
+            iconColor = COLORS.green;
+          }
+          else if (order.status === 'Cancelled') { 
+            title = `Order #${order.id.slice(-6).toUpperCase()} Cancelled`; 
+            icon = 'close-circle-outline';
+            iconColor = COLORS.danger;
+          }
+          else { 
+            title = `Order #${order.id.slice(-6).toUpperCase()} is ${order.status}`; 
+            icon = 'cube-outline';
+            iconColor = COLORS.primary;
+          }
+          
+          return { 
+            id: order.id, icon, iconColor, title, 
+            time: new Date(order.updated_at || order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+          };
         });
         setRecentActivity(formattedActivity);
       }
@@ -108,10 +144,10 @@ const AdminDashboardScreen = ({ navigation }) => {
   };
 
   const STATS_UI = [
-    { label: 'Today\'s Revenue', value: `₹${stats.revenue.toLocaleString('en-IN')}`, emoji: '📈', color: COLORS.green },
-    { label: 'Today\'s Orders', value: stats.totalOrders.toString(), emoji: '📦', color: COLORS.yellow },
-    { label: 'Active Staff', value: stats.activeStaff.toString(), emoji: '👨', color: '#3B82F6' },
-    { label: 'Pending Orders', value: stats.pendingOrders.toString(), emoji: '⏳', color: COLORS.orange },
+    { label: 'Today\'s Revenue', value: `₹${stats.revenue.toLocaleString('en-IN')}`, icon: 'trending-up', color: COLORS.green },
+    { label: 'Today\'s Orders', value: stats.totalOrders.toString(), icon: 'cube', color: COLORS.yellow },
+    { label: 'Active Staff', value: stats.activeStaff.toString(), icon: 'people', color: '#3B82F6' },
+    { label: 'Pending Orders', value: stats.pendingOrders.toString(), icon: 'time', color: COLORS.orange },
   ];
 
   if (loading) {
@@ -129,7 +165,7 @@ const AdminDashboardScreen = ({ navigation }) => {
         {/* Header */}
         <View style={[s.header, { justifyContent: 'space-between', paddingHorizontal: 0, marginBottom: SPACING.xl }]}>
           <View style={s.headerLeft}>
-            <Text style={s.greeting}>Hello, {name} 👑</Text>
+            <Text style={s.greeting}>Hello, {name}</Text>
             <Text style={s.subGreeting}>Here's what's happening today</Text>
           </View>
           <TouchableOpacity style={s.bellBtn} onPress={() => navigation.navigate('Notifications')}>
@@ -142,8 +178,8 @@ const AdminDashboardScreen = ({ navigation }) => {
         <View style={s.statsGrid}>
           {STATS_UI.map((stat, idx) => (
             <View key={idx} style={s.statCard}>
-              <View style={[s.iconBox, { backgroundColor: stat.color + '20' }]}>
-                <Text style={s.statEmoji}>{stat.emoji}</Text>
+              <View style={[s.iconBox, { backgroundColor: stat.color + '15' }]}>
+                <Ionicons name={stat.icon} size={22} color={stat.color} />
               </View>
               <Text style={s.statValue}>{stat.value}</Text>
               <Text style={s.statLabel}>{stat.label}</Text>
@@ -183,7 +219,7 @@ const AdminDashboardScreen = ({ navigation }) => {
              <Text style={{color: COLORS.textGray, textAlign: 'center', padding: SPACING.md}}>No recent activity.</Text>
           ) : (
              recentActivity.map((activity, idx) => (
-               <ActivityRow key={activity.id + idx} icon={activity.icon} title={activity.title} time={activity.time} />
+               <ActivityRow key={activity.id + idx} icon={activity.icon} iconColor={activity.iconColor} title={activity.title} time={activity.time} />
              ))
           )}
         </View>
@@ -194,11 +230,13 @@ const AdminDashboardScreen = ({ navigation }) => {
   );
 };
 
-const ActivityRow = ({ icon, title, time }) => (
+const ActivityRow = ({ icon, iconColor, title, time }) => (
   <View style={s.activityRow}>
-    <View style={s.activityIcon}><Text>{icon}</Text></View>
+    <View style={[s.activityIcon, { backgroundColor: iconColor + '15' }]}>
+      <Ionicons name={icon} size={20} color={iconColor} />
+    </View>
     <View style={s.activityInfo}>
-      <Text style={s.activityTitle}>{title}</Text>
+      <Text style={s.activityTitle} numberOfLines={1}>{title}</Text>
       <Text style={s.activityTime}>{time}</Text>
     </View>
   </View>
@@ -221,25 +259,24 @@ const s = StyleSheet.create({
 
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.md, marginBottom: SPACING.xl },
   statCard: {
-    width: '47%', backgroundColor: COLORS.white, borderRadius: RADIUS.lg,
-    padding: SPACING.lg, ...SHADOW.sm, marginBottom: SPACING.sm
+    width: '47%', backgroundColor: COLORS.white, borderRadius: RADIUS.xl,
+    padding: SPACING.lg, ...SHADOW.md, marginBottom: SPACING.sm, borderWidth: 1, borderColor: COLORS.border
   },
   iconBox: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.md },
-  statEmoji: { fontSize: 20 },
-  statValue: { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.extrabold, color: COLORS.textDark },
-  statLabel: { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 4 },
+  statValue: { fontSize: FONTS.sizes.lg, fontWeight: '900', color: COLORS.textDark },
+  statLabel: { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 4, fontWeight: '600' },
 
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginBottom: SPACING.xl, justifyContent: 'space-between' },
-  actionBox: { width: '47%', backgroundColor: COLORS.white, padding: SPACING.md, borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm, marginBottom: SPACING.sm },
+  actionBox: { width: '47%', backgroundColor: COLORS.white, padding: SPACING.md, borderRadius: RADIUS.xl, alignItems: 'center', ...SHADOW.sm, marginBottom: SPACING.sm, borderWidth: 1, borderColor: COLORS.bgLight },
   actionIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.bgLight, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.sm },
-  actionTxt: { fontSize: FONTS.sizes.xs, fontWeight: FONTS.weights.semibold, color: COLORS.textDark, textAlign: 'center' },
+  actionTxt: { fontSize: FONTS.sizes.xs, fontWeight: '700', color: COLORS.textDark, textAlign: 'center' },
 
-  activityCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACING.lg, ...SHADOW.sm },
+  activityCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.xl, padding: SPACING.lg, ...SHADOW.md, borderWidth: 1, borderColor: COLORS.border },
   activityRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg },
-  activityIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.bgLight, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md },
+  activityIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md },
   activityInfo: { flex: 1 },
-  activityTitle: { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
-  activityTime: { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 2 },
+  activityTitle: { fontSize: FONTS.sizes.sm, fontWeight: '700', color: COLORS.textDark },
+  activityTime: { fontSize: 11, color: COLORS.textGray, marginTop: 4, fontWeight: '600' },
 });
 
 export default AdminDashboardScreen;

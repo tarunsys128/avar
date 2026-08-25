@@ -24,7 +24,7 @@ const StaffDashboardScreen = () => {
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select(`*, profiles:customer_id (name, phone, avatar_url)`)
+      .select(`*, profiles:customer_id (name, phone, avatar_url, business_name), order_items(*, products(name))`)
       .in('status', ['Pending', 'Accepted'])
       .order('created_at', { ascending: true });
 
@@ -253,6 +253,9 @@ const StaffDashboardScreen = () => {
                   )}
                   <View>
                     <Text style={s.customerName}>{order.profiles?.name || 'Customer'}</Text>
+                    {order.profiles?.business_name ? (
+                      <Text style={s.customerPhone}>🏢 {order.profiles.business_name}</Text>
+                    ) : null}
                     {order.status !== 'Pending' && order.profiles?.phone && (
                       <Text style={s.customerPhone}>📞 {order.profiles.phone}</Text>
                     )}
@@ -261,6 +264,24 @@ const StaffDashboardScreen = () => {
                 
                 <Text style={s.customerInfo}>📍 {order.delivery_address || 'No address provided'}</Text>
                 <Text style={s.customerInfo}>💰 ₹{order.total_amount}</Text>
+
+                {/* Order Items UI */}
+                {order.order_items && order.order_items.length > 0 ? (
+                  <View style={s.itemsSection}>
+                    <Text style={s.sectionHeaderSmall}>Items to Pack / Deliver</Text>
+                    {order.order_items.map(item => {
+                      const boxSize = (item.weight_kg && item.blocks) ? (item.weight_kg / item.blocks) : 5;
+                      const productName = item.products?.name || 'Product';
+                      return (
+                        <View key={item.id} style={s.itemRow}>
+                          <Text style={s.itemDot}>•</Text>
+                          <Text style={s.itemNameText}>{productName} ({boxSize}kg Box)</Text>
+                          <Text style={s.itemQtyText}>x {item.blocks}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : null}
                 
                 {order.status !== 'Pending' && (
                   <View style={s.commActions}>
@@ -351,6 +372,13 @@ const s = StyleSheet.create({
   customerPhone: { fontSize: 11, color: COLORS.textMed },
   customerInfo: { fontSize: FONTS.sizes.sm, color: COLORS.textMed },
   
+  itemsSection: { backgroundColor: COLORS.white, padding: SPACING.md, borderRadius: RADIUS.md, marginTop: SPACING.sm, borderWidth: 1, borderColor: COLORS.border },
+  sectionHeaderSmall: { fontSize: 11, fontWeight: 'bold', color: COLORS.textMed, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  itemRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 },
+  itemDot: { color: COLORS.primary, fontSize: 16, lineHeight: 18, marginRight: 6 },
+  itemNameText: { flex: 1, fontSize: FONTS.sizes.sm, color: COLORS.textDark, fontWeight: '600' },
+  itemQtyText: { fontSize: FONTS.sizes.sm, color: COLORS.primary, fontWeight: 'bold', marginLeft: 8 },
+
   commActions: { flexDirection: 'row', gap: 10, marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border + '50', paddingTop: 10 },
   commBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.white, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border },
   commBtnTxt: { fontSize: 11, fontWeight: FONTS.weights.semibold, color: COLORS.textDark },

@@ -12,29 +12,34 @@ import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 import ProductPlaceholder from '../../components/ProductPlaceholder';
 
 const { width } = Dimensions.get('window');
-const CARTON_KG = 5; // 1 carton = 5 kg
 
-// Map paneer type names to Ionicons
-const PANEER_ICONS = {
-  'Soft Paneer':  'cube-outline',
-  'Hard Paneer':  'layers-outline',
-  'Malai Paneer': 'water-outline',
-};
-const DEFAULT_ICON = 'cube-outline';
-
-// ─── Carton Counter ────────────────────────────────────────────────────────────
-const CartonCounter = ({ item }) => {
+// ─── Custom Carton Counter ────────────────────────────────────────────────────────────
+const CustomCartonCounter = ({ item, packSize, qtyLabel }) => {
   const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
-  const cartItem = cart.find(c => c.id === item.id);
+  const cartId = `${item.id}-bulk${packSize}`;
+  const cartItem = cart.find(c => c.id === cartId);
   const cartons = cartItem?.qty || 0;
 
   const increment = () => {
-    if (cartons === 0) addToCart(item);
-    else updateQuantity(item.id, cartons + 1);
+    if (cartons === 0) {
+      const cartProduct = {
+        ...item,
+        id: cartId,
+        original_id: item.id,
+        name: `${item.name} (${packSize}kg Box)`,
+        packSize: packSize,
+        qtyLabel: qtyLabel || 'box',
+        is_wholesale: true,
+      };
+      addToCart(cartProduct, 1);
+    } else {
+      updateQuantity(cartId, cartons + 1);
+    }
   };
+  
   const decrement = () => {
-    if (cartons <= 1) removeFromCart(item.id);
-    else updateQuantity(item.id, cartons - 1);
+    if (cartons <= 1) removeFromCart(cartId);
+    else updateQuantity(cartId, cartons - 1);
   };
 
   return (
@@ -49,7 +54,7 @@ const CartonCounter = ({ item }) => {
 
       <View style={styles.counterMid}>
         <Text style={styles.counterNum}>{cartons}</Text>
-        <Text style={styles.counterUnit}>carton{cartons !== 1 ? 's' : ''}</Text>
+        <Text style={styles.counterUnit}>{qtyLabel || 'box'}{cartons !== 1 ? (qtyLabel === 'box' ? 'es' : 's') : ''}</Text>
       </View>
 
       <TouchableOpacity style={[styles.counterBtn, styles.counterBtnPrimary]} onPress={increment}>
@@ -59,64 +64,132 @@ const CartonCounter = ({ item }) => {
   );
 };
 
-// ─── Paneer Product Card ───────────────────────────────────────────────────────
-const PaneerCard = ({ item }) => {
+// ─── Block Card (5kg) ─────────────────────────────────────────────────────────
+const BlockCard = ({ productsData }) => {
+  const blockProduct = productsData.find(p => p.name.includes('Malai') || p.name.includes('Block')) || productsData[0];
+  if (!blockProduct) return null;
+
+  const packSize = 5;
   const { cart } = useCart();
-  const cartItem = cart.find(c => c.id === item.id);
+  const cartId = `${blockProduct.id}-bulk${packSize}`;
+  const cartItem = cart.find(c => c.id === cartId);
   const cartons = cartItem?.qty || 0;
   
-  const bulkQty = item.wholesale_qty || 5;
-  const totalKg = cartons * bulkQty;
-  const iconName = item.emoji || 'cube-outline';
-  
-  const cartonPrice = item.wholesale_price || (item.price_per_kg * bulkQty).toFixed(0);
-  const perKgPrice = item.retail_price || item.price_per_kg || 0;
+  const totalKg = cartons * packSize;
+  const perKgPrice = blockProduct.price_per_kg || 0;
+  const cartonPrice = blockProduct.wholesale_price && !blockProduct.packSize ? blockProduct.wholesale_price : perKgPrice * packSize;
 
   return (
     <View style={[styles.paneerCard, cartons > 0 && styles.paneerCardActive]}>
-      {/* Active indicator strip */}
       {cartons > 0 && <View style={styles.activeStrip} />}
-
-      {/* Icon area */}
-      <View style={[styles.iconWrap, cartons > 0 && styles.iconWrapActive]}>
-        {item.image_url ? (
-           <Image source={{uri: item.image_url}} style={styles.cardImage} />
-        ) : (
-           <ProductPlaceholder category={item.category} size={56} />
-        )}
+      
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+         <View style={[styles.iconWrap, cartons > 0 && styles.iconWrapActive]}>
+             <Image source={require('../../../assets/paneer_3d.png')} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+         </View>
+         <View style={{ flex: 1, marginLeft: SPACING.md }}>
+             <Text style={styles.paneerName}>5 kg Paneer Block</Text>
+             <Text style={styles.paneerDesc}>Solid Paneer block for bulk cutting.</Text>
+         </View>
       </View>
 
-      {/* Info */}
-      <Text style={styles.paneerName}>{item.name}</Text>
-      <Text style={styles.paneerDesc} numberOfLines={2}>
-        {item.subtitle || `Premium quality ${item.name.toLowerCase()} for wholesale`}
-      </Text>
-
-      {/* Pricing */}
       <View style={styles.priceRow}>
         <View>
-          <Text style={styles.pricePerKg}>₹{perKgPrice}<Text style={styles.priceUnit}>/{item.unit_type || 'kg'}</Text></Text>
-          <Text style={styles.priceCarton}>₹{cartonPrice} per carton ({bulkQty} {item.unit_type || 'kg'})</Text>
+          <Text style={styles.pricePerKg}>₹{perKgPrice}<Text style={styles.priceUnit}>/kg</Text></Text>
+          <Text style={styles.priceCarton}>₹{cartonPrice} per block ({packSize} kg)</Text>
         </View>
-        {item.low_stock && (
-          <View style={styles.lowStockBadge}>
-            <Ionicons name="alert-circle" size={10} color={COLORS.danger} style={{ marginRight: 3 }} />
-            <Text style={styles.lowStockTxt}>Low Stock</Text>
-          </View>
-        )}
       </View>
 
-      {/* Divider */}
       <View style={styles.cardDivider} />
 
-      {/* Counter */}
-      <CartonCounter item={item} />
-
-      {/* KG summary */}
+      <CustomCartonCounter item={blockProduct} packSize={packSize} qtyLabel="block" />
+      
       {cartons > 0 && (
         <View style={styles.kgChip}>
           <Ionicons name="scale-outline" size={12} color={COLORS.primary} />
-          <Text style={styles.kgChipTxt}>{totalKg} kg selected</Text>
+          <Text style={styles.kgChipTxt}>{totalKg} kg selected (5kg blocks)</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── Bulk Variant Card (8kg, 16kg, 32kg) ──────────────────────────────────────
+const BulkVariantCard = ({ title, subtitle, packSize, productsData }) => {
+  const [selectedType, setSelectedType] = useState('Hard');
+  
+  const typeOptions = [
+    { label: 'Hard', id: 'Hard Paneer' },
+    { label: 'Soft', id: 'Soft Paneer' },
+    { label: 'Analog', id: 'Analog', disabled: true }
+  ];
+
+  const activeProduct = productsData.find(p => p.name.includes(selectedType === 'Hard' ? 'Hard' : 'Soft')) || productsData[0];
+  if (!activeProduct) return null;
+
+  const { cart } = useCart();
+  const cartId = `${activeProduct.id}-bulk${packSize}`;
+  const cartItem = cart.find(c => c.id === cartId);
+  const cartons = cartItem?.qty || 0;
+  
+  const totalKg = cartons * packSize;
+  const perKgPrice = activeProduct.price_per_kg || 0;
+  const cartonPrice = perKgPrice * packSize;
+
+  return (
+    <View style={[styles.paneerCard, cartons > 0 && styles.paneerCardActive]}>
+      {cartons > 0 && <View style={styles.activeStrip} />}
+      
+      {/* Header Info */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+         <View style={[styles.iconWrap, cartons > 0 && styles.iconWrapActive]}>
+             <Image source={require('../../../assets/paneer_3d.png')} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+         </View>
+         <View style={{ flex: 1, marginLeft: SPACING.md }}>
+             <Text style={styles.paneerName}>{title}</Text>
+             <Text style={styles.paneerDesc}>{subtitle}</Text>
+         </View>
+      </View>
+
+      {/* Tabs for Variant */}
+      <View style={styles.variantTabs}>
+        {typeOptions.map(opt => (
+          <TouchableOpacity 
+            key={opt.label}
+            style={[
+              styles.variantTab, 
+              selectedType === opt.label && !opt.disabled && styles.variantTabActive,
+              opt.disabled && styles.variantTabDisabled
+            ]}
+            onPress={() => !opt.disabled && setSelectedType(opt.label)}
+            activeOpacity={opt.disabled ? 1 : 0.7}
+          >
+            <Text style={[
+              styles.variantTabTxt, 
+              selectedType === opt.label && !opt.disabled && styles.variantTabTxtActive,
+              opt.disabled && styles.variantTabTxtDisabled
+            ]}>
+              {opt.label} {opt.disabled && '(N/A)'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.priceRow}>
+        <View>
+          <Text style={styles.pricePerKg}>₹{perKgPrice}<Text style={styles.priceUnit}>/kg</Text></Text>
+          <Text style={styles.priceCarton}>₹{cartonPrice} per box ({packSize} kg)</Text>
+        </View>
+      </View>
+
+      <View style={styles.cardDivider} />
+
+      <CustomCartonCounter item={activeProduct} packSize={packSize} qtyLabel="box" />
+      
+      {cartons > 0 && (
+        <View style={styles.kgChip}>
+          <Ionicons name="scale-outline" size={12} color={COLORS.primary} />
+          <Text style={styles.kgChipTxt}>{totalKg} kg selected of {selectedType} Paneer</Text>
         </View>
       )}
     </View>
@@ -126,7 +199,7 @@ const PaneerCard = ({ item }) => {
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 const HomeScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
-  const { cart, getCartTotal } = useCart();
+  const { cart, getCartTotal, getCartKg, getCartCount } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -134,7 +207,6 @@ const HomeScreen = ({ navigation }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchData = useCallback(async () => {
-    // Fetch paneer products only
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -202,10 +274,9 @@ const HomeScreen = ({ navigation }) => {
     };
   }, [currentUser?.id]);
 
-  // Cart summary calculations
-  const totalCartons = cart.reduce((s, i) => s + i.qty, 0);
-  const totalKg = totalCartons * CARTON_KG;
-  const cartTotal = cart.reduce((s, i) => s + (i.price_per_kg * CARTON_KG * i.qty), 0);
+  const totalCartons = getCartCount();
+  const totalKg = getCartKg();
+  const cartTotal = getCartTotal();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -262,7 +333,7 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.infoBannerText}>
             <Text style={styles.infoBannerTitle}>Wholesale Ordering</Text>
             <Text style={styles.infoBannerSub}>
-              Order in bulk cartons · Minimum 1 carton per type
+              Order in bulk cartons · Mix any type of box
             </Text>
           </View>
         </View>
@@ -273,13 +344,12 @@ const HomeScreen = ({ navigation }) => {
             <Ionicons name="cube" size={17} color={COLORS.primary} style={{ marginRight: 6 }} />
             <Text style={styles.sectionTitle}>Select Paneer Types</Text>
           </View>
-          <Text style={styles.sectionMeta}>{products.length} available</Text>
         </View>
 
         {/* ── Product Cards ─────────────────────────────────────────── */}
         {loading ? (
           <View style={styles.loadingWrap}>
-            <Image source={require('../../../assets/intro.gif')} style={{ width: 100, height: 100, resizeMode: 'contain' }} />
+            <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
         ) : products.length === 0 ? (
           <View style={styles.emptyWrap}>
@@ -289,28 +359,12 @@ const HomeScreen = ({ navigation }) => {
           </View>
         ) : (
           <View style={styles.cardsGrid}>
-            {products.map(item => (
-              <PaneerCard key={item.id} item={item} />
-            ))}
+            <BlockCard productsData={products} />
+            <BulkVariantCard title="8 kg Box" subtitle="Contains 8 individual packs of 1 kg" packSize={8} productsData={products} />
+            <BulkVariantCard title="16 kg Box" subtitle="Contains 16 individual packs of 1 kg" packSize={16} productsData={products} />
+            <BulkVariantCard title="32 kg Box" subtitle="Contains 32 individual packs of 1 kg" packSize={32} productsData={products} />
           </View>
         )}
-
-        {/* ── How It Works ──────────────────────────────────────────── */}
-        <View style={styles.howCard}>
-          <Text style={styles.howTitle}>How Ordering Works</Text>
-          <View style={styles.howRow}>
-            <View style={styles.howStep}><Ionicons name="add-circle-outline" size={20} color={COLORS.primary} /></View>
-            <Text style={styles.howTxt}>Choose cartons for each product (Check details for weight)</Text>
-          </View>
-          <View style={styles.howRow}>
-            <View style={styles.howStep}><Ionicons name="cart-outline" size={20} color={COLORS.primary} /></View>
-            <Text style={styles.howTxt}>Review your cart and confirm delivery address</Text>
-          </View>
-          <View style={styles.howRow}>
-            <View style={styles.howStep}><Ionicons name="checkmark-circle-outline" size={20} color={COLORS.green} /></View>
-            <Text style={styles.howTxt}>We confirm and deliver your bulk order</Text>
-          </View>
-        </View>
 
         <View style={{ height: totalCartons > 0 ? 120 : 32 }} />
       </ScrollView>
@@ -324,7 +378,7 @@ const HomeScreen = ({ navigation }) => {
             </View>
             <View style={{ marginLeft: 10 }}>
               <Text style={styles.cartBarLabel}>
-                {totalCartons} carton{totalCartons !== 1 ? 's' : ''} · {totalKg} kg
+                {totalCartons} box{totalCartons !== 1 ? 'es' : ''} · {totalKg} kg
               </Text>
               <Text style={styles.cartBarTotal}>₹{cartTotal.toFixed(0)}</Text>
             </View>
@@ -402,7 +456,6 @@ const styles = StyleSheet.create({
   },
   sectionTitleWrap: { flexDirection: 'row', alignItems: 'center' },
   sectionTitle: { fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
-  sectionMeta:  { fontSize: FONTS.sizes.xs, color: COLORS.textGray },
 
   // Cards Grid
   cardsGrid: { paddingHorizontal: SPACING.lg, gap: SPACING.md },
@@ -427,24 +480,34 @@ const styles = StyleSheet.create({
   // Icon
   iconWrap: {
     width: 60, height: 60, borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: COLORS.white,
+    borderWidth: 1, borderColor: COLORS.border,
     justifyContent: 'center', alignItems: 'center',
-    marginBottom: SPACING.md, overflow: 'hidden'
+    overflow: 'hidden'
   },
-  iconWrapActive: { backgroundColor: COLORS.primary },
-  cardImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  iconWrapActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '15' },
 
   // Card text
   paneerName: { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
   paneerDesc: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 4, lineHeight: 19 },
+  
+  // Variant Tabs
+  variantTabs: { 
+    flexDirection: 'row', backgroundColor: COLORS.bgLight, borderRadius: RADIUS.md, 
+    padding: 4, marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.border 
+  },
+  variantTab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: RADIUS.sm },
+  variantTabActive: { backgroundColor: COLORS.primary, ...SHADOW.sm },
+  variantTabDisabled: { opacity: 0.5, backgroundColor: '#F0F0F0' },
+  variantTabTxt: { fontSize: FONTS.sizes.sm, color: COLORS.textMed, fontWeight: FONTS.weights.semibold },
+  variantTabTxtActive: { color: COLORS.white, fontWeight: FONTS.weights.bold },
+  variantTabTxtDisabled: { color: COLORS.textLight, fontSize: 11 },
 
   // Price
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: SPACING.md },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: SPACING.sm },
   pricePerKg:   { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.extrabold, color: COLORS.textDark },
   priceUnit:    { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.regular, color: COLORS.textGray },
   priceCarton:  { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 2 },
-  lowStockBadge:{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2', paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.full },
-  lowStockTxt:  { fontSize: 10, color: COLORS.danger, fontWeight: FONTS.weights.bold },
 
   cardDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: SPACING.md },
 
@@ -470,20 +533,8 @@ const styles = StyleSheet.create({
   },
   kgChipTxt: { fontSize: FONTS.sizes.xs, color: COLORS.primary, fontWeight: FONTS.weights.bold, marginLeft: 4 },
 
-  // How it works
-  howCard: {
-    marginHorizontal: SPACING.lg, marginTop: SPACING.xl,
-    backgroundColor: COLORS.white, borderRadius: RADIUS.xl,
-    padding: SPACING.lg, ...SHADOW.sm, borderWidth: 1, borderColor: COLORS.border,
-  },
-  howTitle: { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark, marginBottom: SPACING.md },
-  howRow:   { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING.md },
-  howStep:  { width: 32, alignItems: 'center', paddingTop: 1 },
-  howTxt:   { flex: 1, fontSize: FONTS.sizes.sm, color: COLORS.textMed, lineHeight: 20, marginLeft: 8 },
-
   // Loading / Empty
   loadingWrap: { alignItems: 'center', paddingVertical: 60 },
-  loadingTxt:  { marginTop: SPACING.md, color: COLORS.textGray, fontSize: FONTS.sizes.sm },
   emptyWrap:   { alignItems: 'center', paddingVertical: 60, paddingHorizontal: SPACING.xxxl },
   emptyTitle:  { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.textDark, marginTop: SPACING.lg },
   emptyTxt:    { fontSize: FONTS.sizes.sm, color: COLORS.textGray, textAlign: 'center', marginTop: SPACING.sm, lineHeight: 20 },

@@ -173,6 +173,14 @@ const AdminCustomersScreen = ({ navigation }) => {
                   ) : (
                     <>
                       <View style={s.detailRow}>
+                        <Text style={s.detailLabel}>Business Name</Text>
+                        <Text style={s.detailValue}>{cust.business_name || 'N/A'}</Text>
+                      </View>
+                      <View style={s.detailRow}>
+                        <Text style={s.detailLabel}>Address</Text>
+                        <Text style={s.detailValue}>{cust.address || 'N/A'}</Text>
+                      </View>
+                      <View style={s.detailRow}>
                         <Text style={s.detailLabel}>Business Type</Text>
                         <Text style={s.detailValue}>{cust.business_type || 'Retail'}</Text>
                       </View>

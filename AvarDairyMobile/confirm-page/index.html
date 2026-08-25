@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avar Dairy - Email Verified</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: #fff;
+      padding: 20px;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 440px;
+      width: 100%;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 48px 32px;
+      animation: fadeUp 0.6s ease-out;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .icon-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10B981, #059669);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      box-shadow: 0 0 40px rgba(16, 185, 129, 0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.3); }
+      50% { box-shadow: 0 0 60px rgba(16, 185, 129, 0.5); }
+    }
+
+    .icon-circle svg {
+      width: 40px;
+      height: 40px;
+      stroke: white;
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .checkmark {
+      stroke-dasharray: 50;
+      stroke-dashoffset: 50;
+      animation: draw 0.6s ease-out 0.3s forwards;
+    }
+
+    @keyframes draw {
+      to { stroke-dashoffset: 0; }
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      background: linear-gradient(to right, #10B981, #34D399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .steps {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: left;
+    }
+
+    .steps-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #10B981;
+      margin-bottom: 12px;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
+      color: #10B981;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      margin-top: 32px;
+      font-size: 13px;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    .error-card { display: none; }
+    .error-card h1 {
+      background: linear-gradient(to right, #EF4444, #F87171);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .error-card .icon-circle {
+      background: linear-gradient(135deg, #EF4444, #DC2626);
+      box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+    }
+    @keyframes pulse-error {
+      0%, 100% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.3); }
+      50% { box-shadow: 0 0 60px rgba(239, 68, 68, 0.5); }
+    }
+    .error-card .icon-circle { animation: pulse-error 2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <!-- Success State -->
+  <div class="container success-card" id="successCard">
+    <div class="card">
+      <div class="icon-circle">
+        <svg viewBox="0 0 24 24">
+          <polyline class="checkmark" points="5 12 10 17 19 7"></polyline>
+        </svg>
+      </div>
+      <h1>Email Verified!</h1>
+      <p class="subtitle">
+        Your email has been successfully verified. Your Avar Dairy account is now active.
+      </p>
+      <div class="steps">
+        <div class="steps-title">Next Steps</div>
+        <div class="step">
+          <span class="step-num">1</span>
+          <span>Open the <strong>Avar Dairy</strong> app on your phone</span>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <span>Login with your email & password</span>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <span>Start placing orders! 🎉</span>
+        </div>
+      </div>
+      <p class="brand">Avar Dairy © 2026</p>
+    </div>
+  </div>
+
+  <!-- Error State (hidden by default) -->
+  <div class="container error-card" id="errorCard">
+    <div class="card">
+      <div class="icon-circle">
+        <svg viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </div>
+      <h1>Verification Failed</h1>
+      <p class="subtitle">
+        The verification link may have expired or already been used. Please try signing up again in the Avar Dairy app.
+      </p>
+      <p class="brand">Avar Dairy © 2026</p>
+    </div>
+  </div>
+
+  <script>
+    // Check URL params for error
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(hash.replace('#', ''));
+    
+    const hasError = params.get('error') || hashParams.get('error');
+    const errorDesc = params.get('error_description') || hashParams.get('error_description');
+    
+    if (hasError) {
+      document.getElementById('successCard').style.display = 'none';
+      document.getElementById('errorCard').style.display = 'block';
+      if (errorDesc) {
+        document.querySelector('.error-card .subtitle').textContent = decodeURIComponent(errorDesc);
+      }
+    }
+  </script>
+</body>
+</html>

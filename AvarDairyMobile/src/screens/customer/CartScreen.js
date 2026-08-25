@@ -7,8 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../../context/CartContext';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOW } from '../../constants/theme';
 
-const CARTON_KG = 5;
-
 // ─── Stepper ───────────────────────────────────────────────────────────────────
 const Stepper = ({ item }) => {
   const { updateQuantity, removeFromCart } = useCart();
@@ -22,7 +20,7 @@ const Stepper = ({ item }) => {
       </TouchableOpacity>
       <View style={s.stepMid}>
         <Text style={s.stepCount}>{item.qty}</Text>
-        <Text style={s.stepUnit}>ctn</Text>
+        <Text style={s.stepUnit}>{item.qtyLabel || 'box'}</Text>
       </View>
       <TouchableOpacity
         style={[s.stepBtn, s.stepBtnPrimary]}
@@ -101,8 +99,10 @@ const CartScreen = ({ navigation }) => {
         {/* Cart Items */}
         <Text style={s.sectionLabel}>ITEMS IN ORDER</Text>
         {cart.map(item => {
-          const itemKg = item.qty * CARTON_KG;
-          const itemTotal = item.price_per_kg * CARTON_KG * item.qty;
+          const packSize = item.packSize || item.wholesale_qty || 5;
+          const itemKg = item.qty * packSize;
+          const wholesalePrice = (item.wholesale_price && !item.packSize) ? item.wholesale_price : (item.price_per_kg * packSize);
+          const itemTotal = wholesalePrice * item.qty;
           return (
             <View key={item.id} style={s.cartCard}>
               <View style={s.itemIconWrap}>
@@ -127,12 +127,17 @@ const CartScreen = ({ navigation }) => {
         <View style={s.billCard}>
           <Text style={s.billTitle}>Order Summary</Text>
 
-          {cart.map(item => (
-            <View key={item.id} style={s.billRow}>
-              <Text style={s.billLabel}>{item.name} ({item.qty} × 5 kg)</Text>
-              <Text style={s.billValue}>₹{(item.price_per_kg * CARTON_KG * item.qty).toFixed(0)}</Text>
-            </View>
-          ))}
+          {cart.map(item => {
+            const packSize = item.packSize || item.wholesale_qty || 5;
+            const wholesalePrice = (item.wholesale_price && !item.packSize) ? item.wholesale_price : (item.price_per_kg * packSize);
+            const itemTotal = wholesalePrice * item.qty;
+            return (
+              <View key={item.id} style={s.billRow}>
+                <Text style={s.billLabel}>{item.name} ({item.qty} × {packSize} kg)</Text>
+                <Text style={s.billValue}>₹{itemTotal.toFixed(0)}</Text>
+              </View>
+            );
+          })}
 
           <View style={s.billDivider} />
 

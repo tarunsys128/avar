@@ -105,15 +105,18 @@ const AddressSelectionScreen = ({ navigation }) => {
       if (!orderData) throw new Error("Failed to initialize order.");
 
       // 3. Create the order items (carton-based wholesale)
-      const CARTON_KG = 5;
-      const orderItems = cart.map(item => ({
-        order_id: orderData.id,
-        product_id: item.id,
-        blocks:      parseInt(item.qty) || 0,            // number of cartons
-        weight_kg:   (item.qty * CARTON_KG),              // total kg
-        price_per_kg: Number(item.price_per_kg) || 0,     // rate per kg
-        total_price:  Number((item.price_per_kg * CARTON_KG * item.qty).toFixed(2)),
-      }));
+      const orderItems = cart.map(item => {
+        const packSize = item.packSize || item.wholesale_qty || 5;
+        const wholesalePrice = (item.wholesale_price && !item.packSize) ? item.wholesale_price : (item.price_per_kg * packSize);
+        return {
+          order_id: orderData.id,
+          product_id: item.original_id || item.id,
+          blocks:      parseInt(item.qty) || 0,            // number of cartons/packs
+          weight_kg:   (item.qty * packSize),              // total kg
+          price_per_kg: Number(item.price_per_kg) || 0,     // rate per kg
+          total_price:  Number((wholesalePrice * item.qty).toFixed(2)),
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('order_items')

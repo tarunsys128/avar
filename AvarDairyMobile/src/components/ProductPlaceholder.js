@@ -1,20 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, RADIUS } from '../constants/theme';
 
-// Category-based emoji + color mapping for dairy products
+// Category-based icon + color mapping for dairy products
 const CATEGORY_STYLES = {
-  paneer: { emoji: '🧀', bg: '#FEF3C7', label: 'Paneer' },
-  cheese: { emoji: '🧀', bg: '#FDE68A', label: 'Cheese' },
-  milk:   { emoji: '🥛', bg: '#DBEAFE', label: 'Milk' },
-  butter: { emoji: '🧈', bg: '#FEF9C3', label: 'Butter' },
-  chaas:  { emoji: '🥤', bg: '#D1FAE5', label: 'Chaas' },
-  curd:   { emoji: '🍶', bg: '#E0E7FF', label: 'Curd' },
-  ghee:   { emoji: '🫕', bg: '#FEF3C7', label: 'Ghee' },
-  cream:  { emoji: '🍦', bg: '#FCE7F3', label: 'Cream' },
+  paneer: { image: require('../../assets/paneer_3d.png'), bg: '#FFFFFF', label: 'Paneer' },
+  cheese: { image: require('../../assets/cheese_3d.png'), bg: '#FFFFFF', label: 'Cheese' },
+  milk:   { icon: 'water-outline', bg: '#DBEAFE', label: 'Milk', color: '#1E3A8A' },
+  butter: { icon: 'layers-outline', bg: '#FEF9C3', label: 'Butter', color: '#92400E' },
+  chaas:  { icon: 'beer-outline', bg: '#D1FAE5', label: 'Chaas', color: '#065F46' },
+  curd:   { icon: 'aperture-outline', bg: '#E0E7FF', label: 'Curd', color: '#3730A3' },
+  ghee:   { icon: 'flask-outline', bg: '#FEF3C7', label: 'Ghee', color: '#92400E' },
+  cream:  { icon: 'ice-cream-outline', bg: '#FCE7F3', label: 'Cream', color: '#9D174D' },
 };
 
-const DEFAULT_STYLE = { emoji: '🧀', bg: '#FEF3C7', label: 'Dairy' };
+const DEFAULT_STYLE = { icon: 'cube-outline', bg: '#F3F4F6', label: 'Dairy', color: '#4B5563' };
 
 /**
  * A beautiful placeholder for products without images.
@@ -29,10 +30,16 @@ const ProductPlaceholder = ({ category, size = 60, style }) => {
   const emojiSize = Math.max(size * 0.45, 20);
 
   return (
-    <View style={[s.container, { width: size, height: size, backgroundColor: cat.bg }, style]}>
-      <Text style={[s.emoji, { fontSize: emojiSize }]}>{cat.emoji}</Text>
-      {size >= 50 && (
-        <Text style={s.label} numberOfLines={1}>{cat.label}</Text>
+    <View style={[s.container, { width: size, height: size, backgroundColor: cat.bg, overflow: 'hidden' }, style]}>
+      {cat.image ? (
+        <Image source={cat.image} style={{ width: size * 0.9, height: size * 0.9, resizeMode: 'contain' }} />
+      ) : (
+        <>
+          <Ionicons name={cat.icon} size={emojiSize} color={cat.color || '#92400E'} style={s.icon} />
+          {size >= 50 && (
+            <Text style={[s.label, cat.color && { color: cat.color }]} numberOfLines={1}>{cat.label}</Text>
+          )}
+        </>
       )}
     </View>
   );
@@ -44,7 +51,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emoji: {
+  icon: {
     marginBottom: 2,
   },
   label: {

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
 const CartContext = createContext();
-const CARTON_KG = 5; // 1 carton = 5 kg
 
 export const useCart = () => useContext(CartContext);
 
@@ -33,7 +32,8 @@ export const CartProvider = ({ children }) => {
   const getCartTotal = () =>
     cart.reduce((sum, i) => {
       if (i.is_wholesale) {
-        const wholesalePrice = i.wholesale_price || (i.price_per_kg * (i.wholesale_qty || 5));
+        const size = i.packSize || i.wholesale_qty || 5;
+        const wholesalePrice = (i.wholesale_price && !i.packSize) ? i.wholesale_price : (i.price_per_kg * size);
         return sum + (wholesalePrice * i.qty);
       }
       return sum + ((i.retail_price || i.price_per_kg || 0) * i.qty);
@@ -46,7 +46,7 @@ export const CartProvider = ({ children }) => {
   const getCartKg = () => 
     cart.reduce((sum, i) => {
       if (i.is_wholesale) {
-         return sum + ((i.wholesale_qty || 5) * i.qty);
+         return sum + ((i.packSize || i.wholesale_qty || 5) * i.qty);
       }
       return sum + i.qty;
     }, 0);
