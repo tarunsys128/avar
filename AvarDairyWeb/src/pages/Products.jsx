@@ -27,10 +27,6 @@ export default function Products() {
       category: product.category,
       status: product.status,
       subtitle: product.subtitle || null,
-      is_wholesale: product.is_wholesale || false,
-      wholesale_price: product.wholesale_price ? parseFloat(product.wholesale_price) : null,
-      wholesale_qty: product.wholesale_qty ? parseFloat(product.wholesale_qty) : null,
-      unit_type: product.unit_type || 'kg'
     }
 
     if (product.id) {

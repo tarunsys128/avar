@@ -165,7 +165,7 @@ const StaffDashboardScreen = () => {
     <SafeAreaView style={s.safe} edges={['top']}>
       <View style={s.header}>
         <View>
-          <Text style={s.greeting}>Avar Partner 🛵</Text>
+          <Text style={s.greeting}>Avar Partner</Text>
           <View style={s.statusRow}>
             <View style={[s.statusDot, { backgroundColor: isDutyOn ? COLORS.green : COLORS.danger }]} />
             <Text style={s.subtitle}>{isDutyOn ? 'On Duty' : 'Off Duty'}</Text>
@@ -235,9 +235,10 @@ const StaffDashboardScreen = () => {
               {order.status === 'Pending' && <View style={s.newIndicator} />}
 
               <View style={s.orderTop}>
-                <View>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
                   <Text style={s.orderId}>#{order.id.slice(-6).toUpperCase()}</Text>
-                  <Text style={s.orderTime}>⏱ {formatTime(order.created_at)}</Text>
+                  <Ionicons name="time-outline" size={12} color={COLORS.textGray} style={{marginLeft: 8, marginRight: 2}} />
+                  <Text style={s.orderTime}>{formatTime(order.created_at)}</Text>
                 </View>
                 <View style={[s.statusBadge, { backgroundColor: color + '20' }]}>
                   <Text style={[s.statusTxt, { color }]}>{order.status}</Text>
@@ -249,21 +250,36 @@ const StaffDashboardScreen = () => {
                   {order.profiles?.avatar_url ? (
                     <Image source={{ uri: order.profiles.avatar_url }} style={s.customerAvatar} />
                   ) : (
-                    <View style={s.avatarPh}><Text style={{fontSize:10}}>👤</Text></View>
+                    <View style={s.avatarPh}><Ionicons name="business" size={14} color={COLORS.textGray} /></View>
                   )}
-                  <View>
-                    <Text style={s.customerName}>{order.profiles?.name || 'Customer'}</Text>
-                    {order.profiles?.business_name ? (
-                      <Text style={s.customerPhone}>🏢 {order.profiles.business_name}</Text>
-                    ) : null}
-                    {order.status !== 'Pending' && order.profiles?.phone && (
-                      <Text style={s.customerPhone}>📞 {order.profiles.phone}</Text>
-                    )}
+                  <View style={{flex: 1}}>
+                    <Text style={s.customerName}>{order.profiles?.business_name || order.profiles?.name || 'Walk-in Customer'}</Text>
                   </View>
                 </View>
                 
-                <Text style={s.customerInfo}>📍 {order.delivery_address || 'No address provided'}</Text>
-                <Text style={s.customerInfo}>💰 ₹{order.total_amount}</Text>
+                {order.profiles?.business_name && (
+                   <View style={s.customerMetaRow}>
+                     <Ionicons name="person-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
+                     <Text style={s.customerPhone}>{order.profiles.name}</Text>
+                   </View>
+                )}
+                
+                {order.status !== 'Pending' && order.profiles?.phone && (
+                  <View style={s.customerMetaRow}>
+                    <Ionicons name="call-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
+                    <Text style={s.customerPhone}>{order.profiles.phone}</Text>
+                  </View>
+                )}
+                
+                <View style={s.customerMetaRow}>
+                  <Ionicons name="location-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
+                  <Text style={s.customerInfo}>{order.delivery_address || 'No address provided'}</Text>
+                </View>
+                
+                <View style={s.customerMetaRow}>
+                  <Ionicons name="wallet-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
+                  <Text style={s.customerInfo}>₹{order.total_amount}</Text>
+                </View>
 
                 {/* Order Items UI */}
                 {order.order_items && order.order_items.length > 0 ? (
@@ -355,22 +371,24 @@ const s = StyleSheet.create({
   empty:  { alignItems: 'center', marginTop: 60 },
   emptyTxt: { color: COLORS.textGray, fontSize: FONTS.sizes.base, textAlign: 'center' },
 
-  orderCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.lg, ...SHADOW.sm, overflow: 'hidden' },
-  newIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 4, backgroundColor: '#3B82F6' },
+  orderCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.md, borderWidth: 1, borderColor: COLORS.border },
+  newIndicator: { position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, backgroundColor: COLORS.orange, borderTopLeftRadius: RADIUS.xl, borderBottomLeftRadius: RADIUS.xl },
 
-  orderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  orderId:  { fontSize: FONTS.sizes.base, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
-  orderTime:{ fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginTop: 4 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.full },
-  statusTxt:   { fontSize: FONTS.sizes.xs, fontWeight: FONTS.weights.bold },
+  orderTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.md },
+  orderId:  { fontSize: FONTS.sizes.md, fontWeight: '900', color: COLORS.textDark },
+  orderTime:{ fontSize: 11, color: COLORS.textGray, fontWeight: '600' },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADIUS.full, height: 26, justifyContent: 'center' },
+  statusTxt:   { fontSize: 11, fontWeight: 'bold' },
 
-  customerBox:  { backgroundColor: COLORS.bgLight, padding: 12, borderRadius: RADIUS.md, marginBottom: 16, gap: 2 },
-  customerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
-  customerAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.border },
-  avatarPh: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.border, justifyContent:'center', alignItems:'center' },
-  customerName: { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
-  customerPhone: { fontSize: 11, color: COLORS.textMed },
-  customerInfo: { fontSize: FONTS.sizes.sm, color: COLORS.textMed },
+  customerBox:  { backgroundColor: COLORS.bgLight, padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md },
+  customerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  customerMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  customerAvatar: { width: 32, height: 32, borderRadius: 16, marginRight: 10 },
+  avatarPh: { width: 32, height: 32, borderRadius: 8, backgroundColor: COLORS.white, justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1, borderColor: COLORS.border },
+  customerIcon: { marginRight: 8, width: 16 },
+  customerName: { fontSize: FONTS.sizes.md, fontWeight: '900', color: COLORS.textDark },
+  customerPhone: { flex: 1, fontSize: FONTS.sizes.sm, color: COLORS.textMed, fontWeight: '600' },
+  customerInfo: { flex: 1, fontSize: 13, color: COLORS.textMed, fontWeight: '600' },
   
   itemsSection: { backgroundColor: COLORS.white, padding: SPACING.md, borderRadius: RADIUS.md, marginTop: SPACING.sm, borderWidth: 1, borderColor: COLORS.border },
   sectionHeaderSmall: { fontSize: 11, fontWeight: 'bold', color: COLORS.textMed, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },

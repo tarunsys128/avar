@@ -31,7 +31,7 @@ const AdminOrdersScreen = ({ navigation }) => {
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select(`*, profiles:customer_id (name, phone, email, avatar_url), order_items(*, products(name))`)
+      .select(`*, profiles:customer_id (name, phone, email, avatar_url, business_name), order_items(*, products(name))`)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -246,17 +246,25 @@ const AdminOrdersScreen = ({ navigation }) => {
                   {order.profiles?.avatar_url ? (
                     <Image source={{ uri: order.profiles.avatar_url }} style={s.customerAvatar} />
                   ) : (
-                    <View style={s.avatarPh}><Ionicons name="person" size={14} color={COLORS.textGray} /></View>
+                    <View style={s.avatarPh}><Ionicons name="business" size={14} color={COLORS.textGray} /></View>
                   )}
-                  <Text style={s.customerName}>{order.profiles?.name || 'Walk-in Customer'}</Text>
+                  <Text style={s.customerName}>{order.profiles?.business_name || order.profiles?.name || 'Walk-in Customer'}</Text>
                 </View>
+                
+                {order.profiles?.business_name && (
+                   <View style={s.customerMetaRow}>
+                     <Ionicons name="person-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
+                     <Text style={s.customerText}>{order.profiles.name}</Text>
+                   </View>
+                )}
+                
                 {order.profiles?.phone && (
-                  <View style={s.customerRow}>
+                  <View style={s.customerMetaRow}>
                     <Ionicons name="call-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
                     <Text style={s.customerText}>{order.profiles.phone}</Text>
                   </View>
                 )}
-                <View style={s.customerRow}>
+                <View style={s.customerMetaRow}>
                   <Ionicons name="location-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
                   <Text style={s.customerText} numberOfLines={2}>{order.delivery_address || 'Pickup'}</Text>
                 </View>
@@ -360,11 +368,12 @@ const s = StyleSheet.create({
 
   customerSection: { backgroundColor: '#FAFAFA', padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md },
   customerRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  customerMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   customerAvatar:  { width: 24, height: 24, borderRadius: 12, marginRight: 8, backgroundColor: COLORS.border },
-  avatarPh:        { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.border, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  avatarPh:        { width: 28, height: 28, borderRadius: 6, backgroundColor: COLORS.border, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
   customerIcon:    { marginRight: 8, width: 16 },
-  customerName:    { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
-  customerText:    { flex: 1, fontSize: FONTS.sizes.xs, color: COLORS.textMed },
+  customerName:    { fontSize: FONTS.sizes.md, fontWeight: '900', color: COLORS.textDark, flex: 1 },
+  customerText:    { flex: 1, fontSize: FONTS.sizes.sm, color: COLORS.textMed, fontWeight: '600' },
 
   orderFooter:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   totalLabel:   { fontSize: FONTS.sizes.xs, color: COLORS.textGray, marginBottom: 2 },

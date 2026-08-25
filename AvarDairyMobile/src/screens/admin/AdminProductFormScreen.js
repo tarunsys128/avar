@@ -115,21 +115,13 @@ const AdminProductFormScreen = ({ route, navigation }) => {
     const payload = {
       name,
       subtitle,
-      description,
       stock: parseInt(stock),
       category,
       status,
       emoji: iconName, // We hijacked standard emoji col for ionicon names so DB doesn't need to change for icons.
       is_bestseller: isBestseller,
       image_url: finalImageUrl,
-      is_retail: isRetail,
-      is_wholesale: isWholesale,
-      retail_price: isRetail ? parseFloat(retailPrice) : 0,
-      wholesale_price: isWholesale ? parseFloat(wholesalePrice) : 0,
-      wholesale_qty: isWholesale ? parseInt(wholesaleQty) : 0,
-      unit_type: unitType,
-      // Fallback for older screens:
-      price_per_kg: isRetail ? parseFloat(retailPrice) : parseFloat(wholesalePrice) / parseInt(wholesaleQty),
+      price_per_kg: isRetail ? parseFloat(retailPrice) : (parseFloat(wholesalePrice) / parseInt(wholesaleQty)) || 0,
     };
 
     let error;
