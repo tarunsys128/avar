@@ -60,45 +60,43 @@ const AdminSt    = createStackNavigator();
 const StaffSt    = createStackNavigator();
 
 // ─── Tab Icons ─────────────────────────────────────────────────────────────────
-const TabIcon = ({ name, label, focused }) => (
-  <View style={ti.wrap}>
-    <View style={[ti.iconContainer, focused && ti.iconContainerActive]}>
-      <Ionicons 
-        name={focused ? name : `${name}-outline`} 
-        size={24} 
-        color={focused ? COLORS.primary : COLORS.textGray} 
-      />
-    </View>
-    <Text numberOfLines={1} adjustsFontSizeToFit style={[ti.label, focused && ti.labelActive]}>{label}</Text>
+const TabIcon = ({ name, focused }) => (
+  <View style={[ti.iconContainer, focused && ti.iconContainerActive]}>
+    <Ionicons 
+      name={focused ? name : `${name}-outline`} 
+      size={24} 
+      color={focused ? COLORS.primary : COLORS.textGray} 
+    />
   </View>
 );
 
 const ti = StyleSheet.create({
-  wrap:        { alignItems: 'center', justifyContent: 'center', paddingTop: 8 },
-  iconContainer: { paddingVertical: 4, paddingHorizontal: 16, borderRadius: 20 },
-  iconContainerActive: { backgroundColor: COLORS.primaryLight },
-  label:       { fontSize: 10, color: COLORS.textGray, marginTop: 4, fontWeight: '600', width: 65, textAlign: 'center' },
-  labelActive: { color: COLORS.primaryDark, fontWeight: '800' },
+  iconContainer: {
+    paddingVertical: 4,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginTop: 4,
+  },
+  iconContainerActive: { 
+    backgroundColor: COLORS.primaryLight 
+  },
 });
 
 const CartTabIcon = ({ focused }) => {
   const { getCartCount } = useCart();
   const count = getCartCount();
   return (
-    <View style={ti.wrap}>
-      <View style={[ti.iconContainer, focused && ti.iconContainerActive]}>
-        <Ionicons 
-          name={focused ? 'cart' : 'cart-outline'} 
-          size={24} 
-          color={focused ? COLORS.primary : COLORS.textGray} 
-        />
-        {count > 0 && (
-          <View style={badge.dot}>
-            <Text style={badge.txt}>{count > 9 ? '9+' : count}</Text>
-          </View>
-        )}
-      </View>
-      <Text style={[ti.label, focused && ti.labelActive]}>Cart</Text>
+    <View style={[ti.iconContainer, focused && ti.iconContainerActive, { position: 'relative' }]}>
+      <Ionicons 
+        name={focused ? 'cart' : 'cart-outline'} 
+        size={24} 
+        color={focused ? COLORS.primary : COLORS.textGray} 
+      />
+      {count > 0 && (
+        <View style={badge.dot}>
+          <Text style={badge.txt}>{count > 9 ? '9+' : count}</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -169,11 +167,10 @@ const ProfileTabStack = () => (
 
 // ─── Shared Tab Bar Style ───────────────────────────────────────────────────────
 const professionalTabBarStyle = {
-  height: 70,
+  height: 65,
   backgroundColor: COLORS.white,
-  paddingBottom: 10,
-  paddingTop: 4,
-  paddingHorizontal: 8,
+  paddingBottom: 8,
+  paddingTop: 8,
   borderTopWidth: 0,
   elevation: 16,
   shadowColor: '#1A202C',
@@ -182,19 +179,22 @@ const professionalTabBarStyle = {
   shadowOffset: { width: 0, height: -6 },
 };
 
+const commonScreenOptions = {
+  headerShown: false,
+  tabBarShowLabel: true,
+  tabBarActiveTintColor: COLORS.primaryDark,
+  tabBarInactiveTintColor: COLORS.textGray,
+  tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: -4 },
+  tabBarStyle: professionalTabBarStyle,
+};
+
 // ─── Customer Bottom Tabs ─────────────────────────────────────────────────────
 const CustomerTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarShowLabel: false,
-      tabBarStyle: professionalTabBarStyle,
-    }}
-  >
+  <Tab.Navigator screenOptions={commonScreenOptions}>
     <Tab.Screen
       name="HomeTab"
       component={HomeTabStack}
-      options={{ tabBarIcon: ({ focused }) => <TabIcon name="home" label="Home" focused={focused} /> }}
+      options={{ tabBarLabel: 'Home', tabBarIcon: ({ focused }) => <TabIcon name="home" focused={focused} /> }}
       listeners={({ navigation }) => ({
         tabPress: (e) => { e.preventDefault(); navigation.navigate('HomeTab', { screen: 'HomeMain' }); },
       })}
@@ -202,7 +202,7 @@ const CustomerTabs = () => (
     <Tab.Screen
       name="CategoriesTab"
       component={CatTabStack}
-      options={{ tabBarIcon: ({ focused }) => <TabIcon name="grid" label="Products" focused={focused} /> }}
+      options={{ tabBarLabel: 'Products', tabBarIcon: ({ focused }) => <TabIcon name="grid" focused={focused} /> }}
       listeners={({ navigation }) => ({
         tabPress: (e) => { e.preventDefault(); navigation.navigate('CategoriesTab', { screen: 'CategoriesMain' }); },
       })}
@@ -210,7 +210,7 @@ const CustomerTabs = () => (
     <Tab.Screen
       name="CartTab"
       component={CartTabStack}
-      options={{ tabBarIcon: ({ focused }) => <CartTabIcon focused={focused} /> }}
+      options={{ tabBarLabel: 'Cart', tabBarIcon: ({ focused }) => <CartTabIcon focused={focused} /> }}
       listeners={({ navigation }) => ({
         tabPress: (e) => { e.preventDefault(); navigation.navigate('CartTab', { screen: 'CartMain' }); },
       })}
@@ -218,7 +218,7 @@ const CustomerTabs = () => (
     <Tab.Screen
       name="OrdersTab"
       component={OrdersTabStack}
-      options={{ tabBarIcon: ({ focused }) => <TabIcon name="receipt" label="Orders" focused={focused} /> }}
+      options={{ tabBarLabel: 'Orders', tabBarIcon: ({ focused }) => <TabIcon name="receipt" focused={focused} /> }}
       listeners={({ navigation }) => ({
         tabPress: (e) => { e.preventDefault(); navigation.navigate('OrdersTab', { screen: 'OrdersMain' }); },
       })}
@@ -226,7 +226,7 @@ const CustomerTabs = () => (
     <Tab.Screen
       name="ProfileTab"
       component={ProfileTabStack}
-      options={{ tabBarIcon: ({ focused }) => <TabIcon name="person" label="Profile" focused={focused} /> }}
+      options={{ tabBarLabel: 'Profile', tabBarIcon: ({ focused }) => <TabIcon name="person" focused={focused} /> }}
       listeners={({ navigation }) => ({
         tabPress: (e) => {
           e.preventDefault();
@@ -238,15 +238,10 @@ const CustomerTabs = () => (
 );
 
 const StaffTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false, tabBarShowLabel: false,
-      tabBarStyle: professionalTabBarStyle
-    }}
-  >
-    <Tab.Screen name="StaffDash" component={StaffDashboardScreen} options={{ tabBarIcon: ({ focused }) => <TabIcon name="bicycle" label="My Tasks" focused={focused} /> }} />
-    <Tab.Screen name="StaffHist" component={StaffHistoryScreen}   options={{ tabBarIcon: ({ focused }) => <TabIcon name="time" label="History" focused={focused} /> }} />
-    <Tab.Screen name="Profile"   component={StaffProfileScreen}        options={{ tabBarIcon: ({ focused }) => <TabIcon name="person" label="Profile" focused={focused} /> }} />
+  <Tab.Navigator screenOptions={commonScreenOptions}>
+    <Tab.Screen name="StaffDash" component={StaffDashboardScreen} options={{ tabBarLabel: 'My Tasks', tabBarIcon: ({ focused }) => <TabIcon name="bicycle" focused={focused} /> }} />
+    <Tab.Screen name="StaffHist" component={StaffHistoryScreen}   options={{ tabBarLabel: 'History', tabBarIcon: ({ focused }) => <TabIcon name="time" focused={focused} /> }} />
+    <Tab.Screen name="Profile"   component={StaffProfileScreen}   options={{ tabBarLabel: 'Profile', tabBarIcon: ({ focused }) => <TabIcon name="person" focused={focused} /> }} />
   </Tab.Navigator>
 );
 
@@ -260,17 +255,12 @@ const StaffRootStack = () => (
 );
 
 const AdminTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false, tabBarShowLabel: false,
-      tabBarStyle: professionalTabBarStyle
-    }}
-  >
-    <Tab.Screen name="AdminDash"  component={AdminDashboardScreen} options={{ tabBarIcon: ({ focused }) => <TabIcon name="analytics" label="Stats" focused={focused} /> }} />
-    <Tab.Screen name="AdminOrds"  component={AdminOrdersScreen}    options={{ tabBarIcon: ({ focused }) => <TabIcon name="list" label="Orders" focused={focused} /> }} />
-    <Tab.Screen name="AdminStaff" component={ManageStaffScreen}    options={{ tabBarIcon: ({ focused }) => <TabIcon name="people" label="Staff" focused={focused} /> }} />
-    <Tab.Screen name="AdminProds" component={ManageProductsScreen} options={{ tabBarIcon: ({ focused }) => <TabIcon name="cube" label="Products" focused={focused} /> }} />
-    <Tab.Screen name="Profile"    component={AdminProfileScreen}        options={{ tabBarIcon: ({ focused }) => <TabIcon name="person" label="Profile" focused={focused} /> }} />
+  <Tab.Navigator screenOptions={commonScreenOptions}>
+    <Tab.Screen name="AdminDash"  component={AdminDashboardScreen} options={{ tabBarLabel: 'Stats', tabBarIcon: ({ focused }) => <TabIcon name="analytics" focused={focused} /> }} />
+    <Tab.Screen name="AdminOrds"  component={AdminOrdersScreen}    options={{ tabBarLabel: 'Orders', tabBarIcon: ({ focused }) => <TabIcon name="list" focused={focused} /> }} />
+    <Tab.Screen name="AdminStaff" component={ManageStaffScreen}    options={{ tabBarLabel: 'Staff', tabBarIcon: ({ focused }) => <TabIcon name="people" focused={focused} /> }} />
+    <Tab.Screen name="AdminProds" component={ManageProductsScreen} options={{ tabBarLabel: 'Products', tabBarIcon: ({ focused }) => <TabIcon name="cube" focused={focused} /> }} />
+    <Tab.Screen name="Profile"    component={AdminProfileScreen}   options={{ tabBarLabel: 'Profile', tabBarIcon: ({ focused }) => <TabIcon name="person" focused={focused} /> }} />
   </Tab.Navigator>
 );
 
