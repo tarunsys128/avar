@@ -155,9 +155,9 @@ const ProfileTabStack = () => (
 
 // ─── Shared Tab Bar Style ───────────────────────────────────────────────────────
 const professionalTabBarStyle = {
-  height: 65,
+  height: 72,
   backgroundColor: COLORS.white,
-  paddingBottom: 8,
+  paddingBottom: 14,
   paddingTop: 8,
   borderTopWidth: 0,
   elevation: 16,
