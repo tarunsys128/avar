@@ -62,19 +62,23 @@ const StaffSt    = createStackNavigator();
 // ─── Tab Icons ─────────────────────────────────────────────────────────────────
 const TabIcon = ({ name, label, focused }) => (
   <View style={ti.wrap}>
-    <Ionicons 
-      name={focused ? name : `${name}-outline`} 
-      size={24} 
-      color={focused ? COLORS.primary : COLORS.textGray} 
-    />
+    <View style={[ti.iconContainer, focused && ti.iconContainerActive]}>
+      <Ionicons 
+        name={focused ? name : `${name}-outline`} 
+        size={24} 
+        color={focused ? COLORS.primary : COLORS.textGray} 
+      />
+    </View>
     <Text numberOfLines={1} adjustsFontSizeToFit style={[ti.label, focused && ti.labelActive]}>{label}</Text>
   </View>
 );
 
 const ti = StyleSheet.create({
-  wrap:        { alignItems: 'center', paddingTop: 4 },
-  label:       { fontSize: 10, color: COLORS.textGray, marginTop: 4, fontWeight: '500', width: 60, textAlign: 'center' },
-  labelActive: { color: COLORS.primary, fontWeight: '700' },
+  wrap:        { alignItems: 'center', justifyContent: 'center', paddingTop: 8 },
+  iconContainer: { paddingVertical: 4, paddingHorizontal: 16, borderRadius: 20 },
+  iconContainerActive: { backgroundColor: COLORS.primaryLight },
+  label:       { fontSize: 10, color: COLORS.textGray, marginTop: 4, fontWeight: '600', width: 65, textAlign: 'center' },
+  labelActive: { color: COLORS.primaryDark, fontWeight: '800' },
 });
 
 const CartTabIcon = ({ focused }) => {
@@ -82,7 +86,7 @@ const CartTabIcon = ({ focused }) => {
   const count = getCartCount();
   return (
     <View style={ti.wrap}>
-      <View style={{ position: 'relative' }}>
+      <View style={[ti.iconContainer, focused && ti.iconContainerActive]}>
         <Ionicons 
           name={focused ? 'cart' : 'cart-outline'} 
           size={24} 
@@ -165,17 +169,17 @@ const ProfileTabStack = () => (
 
 // ─── Shared Tab Bar Style ───────────────────────────────────────────────────────
 const professionalTabBarStyle = {
-  height: 65,
+  height: 70,
   backgroundColor: COLORS.white,
   paddingBottom: 10,
-  paddingTop: 8,
-  paddingHorizontal: 15,
+  paddingTop: 4,
+  paddingHorizontal: 8,
   borderTopWidth: 0,
-  elevation: 8,
-  shadowColor: '#000',
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: -2 },
+  elevation: 16,
+  shadowColor: '#1A202C',
+  shadowOpacity: 0.08,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: -6 },
 };
 
 // ─── Customer Bottom Tabs ─────────────────────────────────────────────────────
