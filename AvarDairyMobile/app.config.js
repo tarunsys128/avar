@@ -46,7 +46,7 @@ module.exports = () => {
           "READ_EXTERNAL_STORAGE",
           "WRITE_EXTERNAL_STORAGE"
         ],
-        ...(variant === 'admin' ? { googleServicesFile: './google-services.json' } : {})
+        googleServicesFile: './google-services.json'
       },
       web: {
         favicon: './assets/images/favicon.png',
