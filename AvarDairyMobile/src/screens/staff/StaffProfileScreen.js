@@ -132,7 +132,7 @@ const StaffProfileScreen = ({ navigation }) => {
         <Text style={s.sectionTitle}>Account & Settings</Text>
         <View style={s.menuGroup}>
           <MenuRow icon="time-outline" title="Task Reminders" onPress={() => navigation.navigate('Reminders')} />
-          <MenuRow icon="lock-closed-outline" title="Change Password" onPress={() => navigation.navigate('GenericSettings', { title: 'Change Password' })} />
+          <MenuRow icon="lock-closed-outline" title="Change Password" onPress={() => navigation.navigate('AdminChangePassword')} />
           <MenuRow icon="headset-outline" title="Support Helpdesk" onPress={() => navigation.navigate('GenericSettings', { title: 'Support Helpdesk' })} />
         </View>
 

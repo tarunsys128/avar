@@ -17,13 +17,38 @@ const GenericSettingsScreen = ({ route, navigation }) => {
       </View>
 
       <View style={s.content}>
-        <Text style={s.icon}>🛠️</Text>
-        <Text style={s.title}>{title}</Text>
-        <Text style={s.desc}>This feature is currently under development and will be available in a future update.</Text>
-        
-        <TouchableOpacity style={s.btn} onPress={() => navigation.goBack()}>
-          <Text style={s.btnTxt}>Go Back</Text>
-        </TouchableOpacity>
+        {title === 'Support Helpdesk' ? (
+          <>
+            <Text style={s.icon}>🎧</Text>
+            <Text style={s.title}>Support Helpdesk</Text>
+            <Text style={s.desc}>If you need assistance, please contact the admin team.</Text>
+            
+            <View style={s.contactCard}>
+              <View style={s.contactRow}>
+                <Text style={s.contactLabel}>Phone:</Text>
+                <Text style={s.contactValue}>+91 99999 00000</Text>
+              </View>
+              <View style={s.contactRow}>
+                <Text style={s.contactLabel}>Email:</Text>
+                <Text style={s.contactValue}>support@avardairy.com</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={s.btn} onPress={() => navigation.goBack()}>
+              <Text style={s.btnTxt}>Go Back</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={s.icon}>🛠️</Text>
+            <Text style={s.title}>{title}</Text>
+            <Text style={s.desc}>This feature is currently under development and will be available in a future update.</Text>
+            
+            <TouchableOpacity style={s.btn} onPress={() => navigation.goBack()}>
+              <Text style={s.btnTxt}>Go Back</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -43,6 +68,31 @@ const s = StyleSheet.create({
   
   btn: { backgroundColor: COLORS.yellow, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 100 },
   btnTxt: { color: COLORS.textDark, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.base },
+
+  contactCard: {
+    backgroundColor: COLORS.white,
+    padding: SPACING.lg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    width: '100%',
+    marginBottom: SPACING.xl,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+  },
+  contactLabel: {
+    fontSize: FONTS.sizes.base,
+    color: COLORS.textGray,
+    fontWeight: FONTS.weights.medium,
+  },
+  contactValue: {
+    fontSize: FONTS.sizes.base,
+    color: COLORS.textDark,
+    fontWeight: FONTS.weights.bold,
+  },
 });
 
 export default GenericSettingsScreen;

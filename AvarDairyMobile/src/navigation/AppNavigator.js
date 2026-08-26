@@ -237,6 +237,7 @@ const StaffRootStack = () => (
   <StaffSt.Navigator screenOptions={noHeader}>
     <StaffSt.Screen name="StaffTabsMain" component={StaffTabs} />
     <StaffSt.Screen name="Notifications" component={CustomerNotificationsScreen} />
+    <StaffSt.Screen name="AdminChangePassword" component={AdminChangePasswordScreen} />
     <StaffSt.Screen name="GenericSettings" component={GenericSettingsScreen} />
     <StaffSt.Screen name="Reminders" component={ReminderSettingsScreen} />
   </StaffSt.Navigator>
