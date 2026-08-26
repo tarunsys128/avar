@@ -58,7 +58,7 @@ const GlobalNotificationHandler = () => {
             const notif = payload.new;
             sendLocalNotification({
               title: notif.title || 'Avar Dairy',
-              body: notif.message,
+              body: notif.body,
               data: { notifId: notif.id },
               channelId: 'default',
             });
