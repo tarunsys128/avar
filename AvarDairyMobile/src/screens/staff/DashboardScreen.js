@@ -12,7 +12,7 @@ import * as Haptics from 'expo-haptics';
 const STATUS_FLOW = { Pending: 'Accepted', Accepted: 'Delivered' };
 const STATUS_COLOR = { Pending: '#F59E0B', Accepted: '#3B82F6', Delivered: COLORS.textGray };
 
-const StaffDashboardScreen = () => {
+const StaffDashboardScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -234,51 +234,59 @@ const StaffDashboardScreen = () => {
             <View key={order.id} style={s.orderCard}>
               {order.status === 'Pending' && <View style={s.newIndicator} />}
 
+              {/* ── Card Header: Business Name + Status ── */}
               <View style={s.orderTop}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Text style={s.orderId}>#{order.id.slice(-6).toUpperCase()}</Text>
-                  <Ionicons name="time-outline" size={12} color={COLORS.textGray} style={{marginLeft: 8, marginRight: 2}} />
-                  <Text style={s.orderTime}>{formatTime(order.created_at)}</Text>
+                <View style={{flex: 1, marginRight: 10}}>
+                  <Text style={s.businessNamePrimary} numberOfLines={1}>
+                    {order.profiles?.business_name || order.profiles?.name || 'Walk-in Customer'}
+                  </Text>
+                  <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 4}}>
+                    <Text style={s.orderIdSmall}>#{order.id.slice(-6).toUpperCase()}</Text>
+                    <View style={s.dotSep} />
+                    <Ionicons name="time-outline" size={12} color={COLORS.textGray} />
+                    <Text style={s.orderTime}> {formatTime(order.created_at)}</Text>
+                  </View>
                 </View>
-                <View style={[s.statusBadge, { backgroundColor: color + '20' }]}>
+                <View style={[s.statusBadge, { backgroundColor: color + '18' }]}>
+                  <View style={[s.statusDotSmall, { backgroundColor: color }]} />
                   <Text style={[s.statusTxt, { color }]}>{order.status}</Text>
                 </View>
               </View>
 
               <View style={s.customerBox}>
-                <View style={s.customerRow}>
-                  {order.profiles?.avatar_url ? (
-                    <Image source={{ uri: order.profiles.avatar_url }} style={s.customerAvatar} />
-                  ) : (
-                    <View style={s.avatarPh}><Ionicons name="business" size={14} color={COLORS.textGray} /></View>
-                  )}
-                  <View style={{flex: 1}}>
-                    <Text style={s.customerName}>{order.profiles?.business_name || order.profiles?.name || 'Walk-in Customer'}</Text>
-                  </View>
-                </View>
-                
+                {/* Personal Info Row */}
                 {order.profiles?.business_name && (
-                   <View style={s.customerMetaRow}>
-                     <Ionicons name="person-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
-                     <Text style={s.customerPhone}>{order.profiles.name}</Text>
-                   </View>
+                  <View style={s.customerMetaRow}>
+                    <View style={s.metaIconBg}>
+                      <Ionicons name="person-outline" size={13} color={COLORS.primary} />
+                    </View>
+                    <Text style={s.customerPhone}>{order.profiles.name}</Text>
+                  </View>
                 )}
                 
                 {order.status !== 'Pending' && order.profiles?.phone && (
                   <View style={s.customerMetaRow}>
-                    <Ionicons name="call-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
+                    <View style={s.metaIconBg}>
+                      <Ionicons name="call-outline" size={13} color={COLORS.green} />
+                    </View>
                     <Text style={s.customerPhone}>{order.profiles.phone}</Text>
                   </View>
                 )}
                 
+                {order.status !== 'Pending' && order.profiles?.phone && (
+                  <View />
+                )}
+                
                 <View style={s.customerMetaRow}>
-                  <Ionicons name="location-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
+                  <View style={s.metaIconBg}>
+                    <Ionicons name="location-outline" size={13} color={COLORS.orange} />
+                  </View>
                   <Text style={s.customerInfo}>{order.delivery_address || 'No address provided'}</Text>
                 </View>
                 
-                <View style={s.customerMetaRow}>
-                  <Ionicons name="wallet-outline" size={14} color={COLORS.textGray} style={s.customerIcon} />
-                  <Text style={s.customerInfo}>₹{order.total_amount}</Text>
+                <View style={s.totalRow}>
+                  <Text style={s.totalLabel}>Order Total</Text>
+                  <Text style={s.totalAmount}>₹{order.total_amount}</Text>
                 </View>
 
                 {/* Order Items UI */}
@@ -354,11 +362,12 @@ const s = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   subtitle: { fontSize: FONTS.sizes.sm, color: COLORS.textGray },
-  
-  statsBar: { flexDirection: 'row', backgroundColor: COLORS.white, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  bellBtn: { marginRight: 16, padding: 4 },
+
+  statsBar: { flexDirection: 'row', backgroundColor: COLORS.white, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   statItem: { flex: 1, alignItems: 'center' },
-  statVal: { fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold, color: COLORS.primary },
-  statLab: { fontSize: 10, color: COLORS.textGray, marginTop: 2 },
+  statVal: { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.extrabold, color: COLORS.primary },
+  statLab: { fontSize: 10, color: COLORS.textGray, marginTop: 2, fontWeight: '600' },
   statDivider: { width: 1, backgroundColor: COLORS.border, height: '60%' },
 
   tabsRow: { flexDirection: 'row', padding: SPACING.md, gap: 8, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
@@ -371,24 +380,36 @@ const s = StyleSheet.create({
   empty:  { alignItems: 'center', marginTop: 60 },
   emptyTxt: { color: COLORS.textGray, fontSize: FONTS.sizes.base, textAlign: 'center' },
 
-  orderCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.md, borderWidth: 1, borderColor: COLORS.border },
+  orderCard: { 
+    backgroundColor: COLORS.white, 
+    borderRadius: RADIUS.xl, 
+    padding: SPACING.lg, 
+    marginBottom: SPACING.md, 
+    ...SHADOW.md, 
+    borderWidth: 1, 
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
   newIndicator: { position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, backgroundColor: COLORS.orange, borderTopLeftRadius: RADIUS.xl, borderBottomLeftRadius: RADIUS.xl },
 
-  orderTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.md },
-  orderId:  { fontSize: FONTS.sizes.md, fontWeight: '900', color: COLORS.textDark },
-  orderTime:{ fontSize: 11, color: COLORS.textGray, fontWeight: '600' },
-  statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADIUS.full, height: 26, justifyContent: 'center' },
-  statusTxt:   { fontSize: 11, fontWeight: 'bold' },
+  orderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
+  businessNamePrimary: { fontSize: FONTS.sizes.md, fontWeight: '900', color: COLORS.textDark, letterSpacing: 0.2 },
+  orderIdSmall: { fontSize: 11, fontWeight: '700', color: COLORS.textGray, backgroundColor: COLORS.bgLight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' },
+  dotSep: { width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.textLight, marginHorizontal: 6 },
+  orderTime: { fontSize: 11, color: COLORS.textGray, fontWeight: '600' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full },
+  statusDotSmall: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
+  statusTxt: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
 
   customerBox:  { backgroundColor: COLORS.bgLight, padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md },
-  customerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  customerMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  customerAvatar: { width: 32, height: 32, borderRadius: 16, marginRight: 10 },
-  avatarPh: { width: 32, height: 32, borderRadius: 8, backgroundColor: COLORS.white, justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1, borderColor: COLORS.border },
-  customerIcon: { marginRight: 8, width: 16 },
-  customerName: { fontSize: FONTS.sizes.md, fontWeight: '900', color: COLORS.textDark },
-  customerPhone: { flex: 1, fontSize: FONTS.sizes.sm, color: COLORS.textMed, fontWeight: '600' },
-  customerInfo: { flex: 1, fontSize: 13, color: COLORS.textMed, fontWeight: '600' },
+  customerMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  metaIconBg: { width: 26, height: 26, borderRadius: 8, backgroundColor: COLORS.white, justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1, borderColor: COLORS.border },
+  customerPhone: { flex: 1, fontSize: FONTS.sizes.sm, color: COLORS.textDark, fontWeight: '600' },
+  customerInfo: { flex: 1, fontSize: 13, color: COLORS.textMed, fontWeight: '500' },
+
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border },
+  totalLabel: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, fontWeight: '600' },
+  totalAmount: { fontSize: FONTS.sizes.md, fontWeight: '900', color: COLORS.primary },
   
   itemsSection: { backgroundColor: COLORS.white, padding: SPACING.md, borderRadius: RADIUS.md, marginTop: SPACING.sm, borderWidth: 1, borderColor: COLORS.border },
   sectionHeaderSmall: { fontSize: 11, fontWeight: 'bold', color: COLORS.textMed, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
@@ -398,12 +419,12 @@ const s = StyleSheet.create({
   itemQtyText: { fontSize: FONTS.sizes.sm, color: COLORS.primary, fontWeight: 'bold', marginLeft: 8 },
 
   commActions: { flexDirection: 'row', gap: 10, marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border + '50', paddingTop: 10 },
-  commBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.white, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border },
-  commBtnTxt: { fontSize: 11, fontWeight: FONTS.weights.semibold, color: COLORS.textDark },
+  commBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.white, paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border },
+  commBtnTxt: { fontSize: 11, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
 
   actionRow:   { flexDirection: 'row', gap: 8 },
-  primaryBtn:  { flex: 1, borderRadius: RADIUS.md, paddingVertical: 12, justifyContent: 'center', alignItems: 'center' },
-  primaryBtnTxt: { color: COLORS.white, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.sm },
+  primaryBtn:  { flex: 1, borderRadius: RADIUS.md, paddingVertical: 14, justifyContent: 'center', alignItems: 'center' },
+  primaryBtnTxt: { color: COLORS.white, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.sm, letterSpacing: 0.3 },
 });
 
 export default StaffDashboardScreen;
