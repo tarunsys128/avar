@@ -61,7 +61,7 @@ const StaffSt    = createStackNavigator();
 
 // ─── Tab Icons ─────────────────────────────────────────────────────────────────
 const TabIcon = ({ name, focused }) => (
-  <View style={[ti.iconContainer, focused && ti.iconContainerActive]}>
+  <View style={{ marginTop: 4 }}>
     <Ionicons 
       name={focused ? name : `${name}-outline`} 
       size={24} 
@@ -70,23 +70,11 @@ const TabIcon = ({ name, focused }) => (
   </View>
 );
 
-const ti = StyleSheet.create({
-  iconContainer: {
-    paddingVertical: 4,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginTop: 4,
-  },
-  iconContainerActive: { 
-    backgroundColor: COLORS.primaryLight 
-  },
-});
-
 const CartTabIcon = ({ focused }) => {
   const { getCartCount } = useCart();
   const count = getCartCount();
   return (
-    <View style={[ti.iconContainer, focused && ti.iconContainerActive, { position: 'relative' }]}>
+    <View style={{ position: 'relative', marginTop: 4 }}>
       <Ionicons 
         name={focused ? 'cart' : 'cart-outline'} 
         size={24} 
