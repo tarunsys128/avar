@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "168866628030",
+    "project_id": "avar-dairy",
+    "storage_bucket": "avar-dairy.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168866628030:android:d7120048c608fcfd2939ef",
+        "android_client_info": {
+          "package_name": "AvarDairy.pvt.ltd"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEWUvnq5ygEOxM5H_-7ysnUikgSc80WW0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168866628030:android:2e3a01d0ff54f1622939ef",
+        "android_client_info": {
+          "package_name": "com.avardairy.management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEWUvnq5ygEOxM5H_-7ysnUikgSc80WW0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
