@@ -172,7 +172,7 @@ const commonScreenOptions = {
   tabBarShowLabel: true,
   tabBarActiveTintColor: COLORS.primaryDark,
   tabBarInactiveTintColor: COLORS.textGray,
-  tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: -4 },
+  tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 }, // Fixed spacing so it doesn't touch the icon
   tabBarStyle: professionalTabBarStyle,
 };
 
