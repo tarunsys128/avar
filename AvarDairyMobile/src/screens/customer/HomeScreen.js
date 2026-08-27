@@ -85,7 +85,7 @@ const BlockCard = ({ productsData }) => {
       
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
          <View style={[styles.iconWrap, cartons > 0 && styles.iconWrapActive]}>
-             <Image source={require('../../../assets/paneer_3d.png')} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+             <Image source={require('../../../assets/paneer_3d.webp')} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
          </View>
          <View style={{ flex: 1, marginLeft: SPACING.md }}>
              <Text style={styles.paneerName}>5 kg Paneer Block</Text>
@@ -143,7 +143,7 @@ const BulkVariantCard = ({ title, subtitle, packSize, productsData }) => {
       {/* Header Info */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
          <View style={[styles.iconWrap, cartons > 0 && styles.iconWrapActive]}>
-             <Image source={require('../../../assets/paneer_3d.png')} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
+             <Image source={require('../../../assets/paneer_3d.webp')} style={{ width: 48, height: 48, resizeMode: 'contain' }} />
          </View>
          <View style={{ flex: 1, marginLeft: SPACING.md }}>
              <Text style={styles.paneerName}>{title}</Text>

@@ -5,8 +5,8 @@ import { COLORS, FONTS, RADIUS } from '../constants/theme';
 
 // Category-based icon + color mapping for dairy products
 const CATEGORY_STYLES = {
-  paneer: { image: require('../../assets/paneer_3d.png'), bg: '#FFFFFF', label: 'Paneer' },
-  cheese: { image: require('../../assets/cheese_3d.png'), bg: '#FFFFFF', label: 'Cheese' },
+  paneer: { image: require('../../assets/paneer_3d.webp'), bg: '#FFFFFF', label: 'Paneer' },
+  cheese: { image: require('../../assets/cheese_3d.webp'), bg: '#FFFFFF', label: 'Cheese' },
   milk:   { icon: 'water-outline', bg: '#DBEAFE', label: 'Milk', color: '#1E3A8A' },
   butter: { icon: 'layers-outline', bg: '#FEF9C3', label: 'Butter', color: '#92400E' },
   chaas:  { icon: 'beer-outline', bg: '#D1FAE5', label: 'Chaas', color: '#065F46' },
