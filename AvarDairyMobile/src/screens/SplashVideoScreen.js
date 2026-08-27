@@ -4,23 +4,19 @@ import * as SplashScreen from 'expo-splash-screen';
 
 const { width, height } = Dimensions.get('screen');
 
-
-
 const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [gifFinished, setGifFinished] = useState(false);
-  const [gifReady, setGifReady] = useState(false);
+  const [gifReady, setGifReady] = useState(false);   // GIF fully painted at full size
   const finishCalled = useRef(false);
   const splashHidden = useRef(false);
 
-  // Hide native splash only after GIF is painted at full size
   const hideSplash = useCallback(async () => {
     if (splashHidden.current) return;
     splashHidden.current = true;
     try { await SplashScreen.hideAsync(); } catch (e) {}
   }, []);
 
-  // Called once to fade out and transition
   const doFinish = useCallback(() => {
     if (finishCalled.current) return;
     finishCalled.current = true;
@@ -34,20 +30,20 @@ const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
     });
   }, [onFinish, fadeAnim, hideSplash]);
 
-  // When GIF finishes its time AND auth is done → transition
+  // When GIF finishes playing AND auth is done → transition out
   useEffect(() => {
     if (gifFinished && !isAuthLoading) {
       doFinish();
     }
   }, [gifFinished, isAuthLoading, doFinish]);
 
-  // SAFETY: After 8 seconds, force finish no matter what
+  // SAFETY: After 8 seconds, force everything
   useEffect(() => {
     const t = setTimeout(() => {
-      hideSplash();
       setGifReady(true);
+      hideSplash();
       setGifFinished(true);
-      setTimeout(() => doFinish(), 1000);
+      setTimeout(() => doFinish(), 500);
     }, 8000);
     return () => clearTimeout(t);
   }, [doFinish, hideSplash]);
@@ -55,25 +51,35 @@ const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
   return (
     <Animated.View style={[s.container, { opacity: fadeAnim }]}>
       <StatusBar hidden />
+
+      {/* Static first-frame image shown while GIF loads (same as native splash) */}
+      {!gifReady && (
+        <Image
+          source={require('../../assets/images/intro_first_frame.png')}
+          style={s.gif}
+          resizeMode="cover"
+        />
+      )}
+
+      {/* GIF stays invisible (opacity 0) until fully loaded+painted, then fades in */}
       <Image
         source={require('../../assets/intro.gif')}
-        style={s.gif}
+        style={[s.gif, { opacity: gifReady ? 1 : 0 }]}
         resizeMode="cover"
         onLoad={() => {
-          // GIF decoded → wait 150ms for it to fully paint at full size
-          // THEN hide native splash so there's no small-image flash
+          // GIF decoded — wait 500ms buffer for full-res paint at layout size
           setTimeout(() => {
             setGifReady(true);
             hideSplash();
-          }, 150);
-          // Allow GIF to play for 3.5 seconds before considering it "finished"
+          }, 500);
+          // Let GIF play for 3.5s before marking it finished
           setTimeout(() => {
             setGifFinished(true);
           }, 3500);
         }}
         onError={() => {
-          hideSplash();
           setGifReady(true);
+          hideSplash();
           setGifFinished(true);
         }}
       />
