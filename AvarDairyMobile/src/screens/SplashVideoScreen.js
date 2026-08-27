@@ -9,10 +9,11 @@ const { width, height } = Dimensions.get('screen');
 const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [gifFinished, setGifFinished] = useState(false);
+  const [gifReady, setGifReady] = useState(false);
   const finishCalled = useRef(false);
   const splashHidden = useRef(false);
 
-  // Hide native splash ASAP
+  // Hide native splash only after GIF is painted at full size
   const hideSplash = useCallback(async () => {
     if (splashHidden.current) return;
     splashHidden.current = true;
@@ -40,14 +41,14 @@ const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
     }
   }, [gifFinished, isAuthLoading, doFinish]);
 
-  // SAFETY: After 6 seconds, force finish no matter what
+  // SAFETY: After 8 seconds, force finish no matter what
   useEffect(() => {
     const t = setTimeout(() => {
       hideSplash();
+      setGifReady(true);
       setGifFinished(true);
-      // Extra safety: force if auth is still loading
       setTimeout(() => doFinish(), 1000);
-    }, 6000);
+    }, 8000);
     return () => clearTimeout(t);
   }, [doFinish, hideSplash]);
 
@@ -59,17 +60,20 @@ const SplashVideoScreen = ({ onFinish, isAuthLoading }) => {
         style={s.gif}
         resizeMode="cover"
         onLoad={() => {
-          // GIF frame visible → hide native splash immediately
-          hideSplash();
-          // Allow GIF to play for a fixed amount of time (e.g. 3.5 seconds) 
-          // before considering it "finished"
+          // GIF decoded → wait 150ms for it to fully paint at full size
+          // THEN hide native splash so there's no small-image flash
+          setTimeout(() => {
+            setGifReady(true);
+            hideSplash();
+          }, 150);
+          // Allow GIF to play for 3.5 seconds before considering it "finished"
           setTimeout(() => {
             setGifFinished(true);
           }, 3500);
         }}
         onError={() => {
-          // If GIF fails to load → skip intro
           hideSplash();
+          setGifReady(true);
           setGifFinished(true);
         }}
       />
