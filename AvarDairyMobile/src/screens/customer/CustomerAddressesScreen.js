@@ -9,10 +9,10 @@ const CustomerAddressesScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  
+
   const [newLabel, setNewLabel] = useState('Home');
   const [newAddress, setNewAddress] = useState('');
   const [newCity, setNewCity] = useState('');
@@ -30,7 +30,7 @@ const CustomerAddressesScreen = ({ navigation }) => {
       .select('*')
       .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false });
-    
+
     if (!error && data) {
       setAddresses(data);
     }
@@ -104,11 +104,13 @@ const CustomerAddressesScreen = ({ navigation }) => {
   const handleDelete = async (id) => {
     Alert.alert('Delete Address', 'Are you sure you want to remove this address?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        setLoading(true);
-        await supabase.from('addresses').delete().eq('id', id);
-        fetchAddresses();
-      }}
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          setLoading(true);
+          await supabase.from('addresses').delete().eq('id', id);
+          fetchAddresses();
+        }
+      }
     ]);
   };
 
@@ -136,7 +138,7 @@ const CustomerAddressesScreen = ({ navigation }) => {
                 <Text style={s.addressText}>{addr.address}</Text>
                 <Text style={s.cityText}>{addr.city}</Text>
                 {addr.phone ? <Text style={s.phoneText}>📞 {addr.phone}</Text> : null}
-                
+
                 <View style={s.actionsRow}>
                   {!addr.is_default && (
                     <>
@@ -165,11 +167,11 @@ const CustomerAddressesScreen = ({ navigation }) => {
             ) : (
               <View style={[s.addressCard, { borderColor: COLORS.primary, borderWidth: 1 }]}>
                 <Text style={s.addressLabel}>{editingId ? 'Edit Address' : 'Add New Address'}</Text>
-                
+
                 <View style={s.labelChips}>
                   {['Home', 'Work', 'Other'].map(lbl => (
-                    <TouchableOpacity 
-                      key={lbl} 
+                    <TouchableOpacity
+                      key={lbl}
                       style={[s.chip, newLabel === lbl && s.chipActive]}
                       onPress={() => setNewLabel(lbl)}
                     >
@@ -178,21 +180,21 @@ const CustomerAddressesScreen = ({ navigation }) => {
                   ))}
                 </View>
 
-                <TextInput 
+                <TextInput
                   style={s.input}
                   placeholder="Street Address (e.g. B-104 Sunrise Apts)"
                   placeholderTextColor={COLORS.textLight}
                   value={newAddress}
                   onChangeText={setNewAddress}
                 />
-                <TextInput 
+                <TextInput
                   style={s.input}
                   placeholder="City & Pincode (e.g. Noida 201301)"
                   placeholderTextColor={COLORS.textLight}
                   value={newCity}
                   onChangeText={setNewCity}
                 />
-                <TextInput 
+                <TextInput
                   style={s.input}
                   placeholder="Phone Number (Optional)"
                   placeholderTextColor={COLORS.textLight}
@@ -229,7 +231,7 @@ const s = StyleSheet.create({
   backBtn: { width: 38, alignItems: 'flex-start' },
   backArrow: { fontSize: 22, color: COLORS.textDark },
   headerTitle: { flex: 1, textAlign: 'center', fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold, color: COLORS.textDark },
-  
+
   addressCard: {
     backgroundColor: COLORS.white, borderRadius: RADIUS.lg,
     padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.sm,
@@ -241,7 +243,7 @@ const s = StyleSheet.create({
   addressText: { fontSize: FONTS.sizes.sm, color: COLORS.textMed, lineHeight: 20 },
   cityText: { fontSize: FONTS.sizes.sm, color: COLORS.textGray, marginTop: 2 },
   phoneText: { fontSize: FONTS.sizes.sm, color: COLORS.primary, marginTop: 4, fontWeight: '600' },
-  
+
   actionsRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
   actionBtn: { paddingHorizontal: 12, paddingVertical: 6 },
   actionTxt: { color: COLORS.primary, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.sm },
@@ -267,7 +269,7 @@ const s = StyleSheet.create({
     padding: SPACING.md, marginBottom: SPACING.sm, fontSize: FONTS.sizes.sm, color: COLORS.textDark,
     backgroundColor: COLORS.bgLight
   },
-  
+
   formActions: { flexDirection: 'row', gap: 12, marginTop: SPACING.sm },
   formBtn: { flex: 1, paddingVertical: 12, borderRadius: RADIUS.md, alignItems: 'center' },
   cancelBtn: { backgroundColor: COLORS.bgLight, borderWidth: 1, borderColor: COLORS.border },
